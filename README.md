@@ -19,7 +19,7 @@ I designed it for programs that need real-time geospatial, such as geofencing, m
 - Implements OGC [Simple Features](https://en.wikipedia.org/wiki/Simple_Features) including Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, GeometryCollection. 
 - Optimized [polygon indexing](docs/POLYGON_INDEXING.md) that introduces two new structures.
 - Reads and writes [WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry), [WKB](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry), and [GeoJSON](https://en.wikipedia.org/wiki/GeoJSON).
-- Provides a purely functional [API](docs/API.md) that is reenterant and thread-safe.
+- Provides a purely functional [API](docs/API.md) that is reentrant and thread-safe.
 - Spatial predicates including "intersects", "covers", "touches", "equals", etc.
 - [Test suite](tests/README.md) with 100% coverage using [memory sanitizer](https://clang.llvm.org/docs/MemorySanitizer.html) and [Valgrind](https://valgrind.org).
 - Self-contained library that is encapsulated in the single [tg.c](tg.c) source file.
@@ -31,11 +31,11 @@ The main goal of TG is to provide the fastest, most memory efficent geometry lib
 
 It's a non-goal for TG to be a full GIS library. Consider [GEOS](https://libgeos.org) if you need GIS algorithms like generating a convex hull or voronoi diagram.
 
-## How fast?
+## Performance
 
 TG uses [entirely new](docs/POLYGON_INDEXING.md) indexing structures that speed up [geometry predicates](API.md#geometry-predicates). It can index more than 10GB per second of point data on modern hardware, while using less than 7% of additional memory, and can perform over 10 million point-in-polygon operations, even when using large polygons with over 10K points.
 
-The following benchmark gives is an example of the point-in-polygon performance
+The following benchmark provides an example of the point-in-polygon performance
 of TG when using a large polygon. In this case of Brazil, which has 39K points. (see image above)
 
 <pre>
