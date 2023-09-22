@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    html, body { margin: 0; border: 0; padding: 0; width: 100%; height: 100% }
+    #canvas { width: 500px; height: 600px; }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="2000" height="2400"></canvas>
+<script>
+
+    let speed = 1;
+
+    let pad = 0.05;
+    let spread = 4;
+    let delay = 0.5 * 1/speed;           // one second delay at start
+    let animation = 7.0 * 1/speed;  // animation time
+    let fadeout = 5.0 * 1/speed;   // fade the animation out
+
+
+    let canvas = document.getElementById("canvas");
+    /** @type {CanvasRenderingContext2D} */
+    let ctx = canvas.getContext("2d");
+
+    let poly = [
+        [-71.866520, 41.319141], [-71.857395, 41.320868], [-71.851834, 41.324733], [-71.847795, 41.329526], [-71.837195, 41.335075], [-71.829355, 41.342482], [-71.831270, 41.351188], [-71.836228, 41.354037], 
+        [-71.837905, 41.359082], [-71.837489, 41.365555], [-71.831685, 41.370873], [-71.832756, 41.375460], [-71.830591, 41.378904], [-71.833493, 41.382366], [-71.832589, 41.386614], [-71.841194, 41.394227],
+        [-71.842357, 41.395322], [-71.842188, 41.396702], [-71.840942, 41.399439], [-71.841412, 41.402978], [-71.843689, 41.405304], [-71.842631, 41.409778], [-71.842096, 41.410648], [-71.839182, 41.412447], 
+        [-71.834145, 41.411677], [-71.829298, 41.413691], [-71.824734, 41.415108], [-71.823690, 41.417524], [-71.818557, 41.419930], [-71.812807, 41.419495], [-71.806961, 41.416705], [-71.803945, 41.417483],
+        [-71.801153, 41.415446], [-71.797790, 41.416763], [-71.787078, 41.651670], [-71.795876, 41.891424], [-71.799411, 42.008224], [-71.591748, 42.013673], [-71.528051, 42.014917], [-71.498530, 42.017265], 
+        [-71.381325, 42.018807], [-71.381572, 41.893426], [-71.338864, 41.898490], [-71.340751, 41.881576], [-71.333966, 41.862537], [-71.342449, 41.844660], [-71.335457, 41.835726], [-71.346409, 41.825272],
+        [-71.347438, 41.823181], [-71.339328, 41.808551], [-71.340489, 41.797080], [-71.340485, 41.797033], [-71.334818, 41.794916], [-71.334647, 41.794840], [-71.332842, 41.790515], [-71.332742, 41.790160], 
+        [-71.329655, 41.788488], [-71.329457, 41.788327], [-71.330228, 41.785600], [-71.330380, 41.785411], [-71.328465, 41.780701], [-71.261039, 41.752083], [-71.225997, 41.712355], [-71.195661, 41.674898],
+        [-71.175751, 41.671534], [-71.176161, 41.668239], [-71.132665, 41.660212], [-71.135006, 41.628496], [-71.139976, 41.624002], [-71.142067, 41.612621], [-71.140242, 41.605030], [-71.138375, 41.603613], 
+        [-71.131482, 41.593408], [-71.122783, 41.523950], [-71.120330, 41.496567], [-71.170471, 41.460818], [-71.194359, 41.456332], [-71.247128, 41.472113], [-71.275187, 41.479246], [-71.277309, 41.480277],
+        [-71.278573, 41.483640], [-71.279816, 41.483694], [-71.296537, 41.468999], [-71.304444, 41.454611], [-71.310691, 41.451019], [-71.337552, 41.449106], [-71.399480, 41.448912], [-71.437894, 41.441154], 
+        [-71.456600, 41.434008], [-71.455517, 41.429393], [-71.455839, 41.422220], [-71.452950, 41.419109], [-71.452469, 41.415998], [-71.453731, 41.411315], [-71.452787, 41.409039], [-71.462786, 41.396344],
+        [-71.470904, 41.390725], [-71.475610, 41.383902], [-71.483620, 41.371459], [-71.480391, 41.361715], [-71.482010, 41.360227], [-71.488485, 41.361293], [-71.498575, 41.371957], [-71.507633, 41.374715], 
+        [-71.514629, 41.374389], [-71.519027, 41.376575], [-71.532879, 41.375839], [-71.538895, 41.372908], [-71.549917, 41.374358], [-71.584645, 41.368565], [-71.597132, 41.364233], [-71.607925, 41.364541],
+        [-71.665838, 41.349946], [-71.696794, 41.340209], [-71.716252, 41.330473], [-71.733353, 41.331357], [-71.751592, 41.325405], [-71.765568, 41.328787], [-71.780682, 41.327469], [-71.821870, 41.319667], 
+        [-71.841981, 41.313219], [-71.855908, 41.306914], [-71.858134, 41.303218], [-71.866520, 41.319141]
+    ];
+
+    poly = poly.reverse();
+
+    let rrect = { 
+        min: { x: poly[0][0], y: poly[0][1] },
+        max: { x: poly[0][0], y: poly[0][1] },
+    };
+    for (let i = 0; i < poly.length; i++) {
+        rrect.min.x = Math.min(rrect.min.x, poly[i][0]);
+        rrect.min.y = Math.min(rrect.min.y, poly[i][1]);
+        rrect.max.x = Math.max(rrect.max.x, poly[i][0]);
+        rrect.max.y = Math.max(rrect.max.y, poly[i][1]);
+    }
+
+    let w = canvas.width;
+    let h = canvas.height;
+    let rw = (rrect.max.x-rrect.min.x);
+    let rh = (rrect.max.y-rrect.min.y);
+
+    let convPoint = function(point) {
+        return {
+            x: (((point[0]-rrect.min.x)/rw)*(w-w*pad*2)+w*pad),
+            y: ((1-(point[1]-rrect.min.y)/rh)*(w-w*pad*2)+w*pad),
+        }
+    }
+
+
+    let duration = delay+animation+fadeout; // total animation time
+
+
+    let nsegs = poly.length-1;
+    let nlevels = 1;
+    let lspread = spread;
+    while (lspread < nsegs) {
+        lspread = lspread * spread;
+        nlevels++;
+    }
+
+    // console.log(nlevels);
+
+    function draw(time) {
+        time = (time/1000 % duration);
+
+        let perc = (time-delay)/animation;
+        perc = perc < 0.0 ? 0.0 : perc > 1.0 ? 1.0 : perc;
+
+        ctx.clearRect(0, 0, w, h);
+
+        if (0) { 
+            // draw outline 
+            ctx.strokeStyle = "#6b7c90";
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, w, h);
+        }
+
+        // footer area
+        let fw = w-w*pad*2;
+        let fh = h-w-w*pad;
+        let fx = w*pad;
+        let fy = h-w*pad-fh;
+        if (0) {
+            ctx.strokeStyle = "#6b7c90";
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(fx, fy, fw, fh);
+        }
+
+        // draw entire polygon
+        ctx.strokeStyle = "#6b7c90";
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        let p = convPoint(poly[0]);
+        ctx.moveTo(p.x, p.y);
+        for (let i = 1; i < poly.length; i++) {
+            let p = convPoint(poly[i]);
+            ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+
+
+        // draw the base levels
+        let dotrad = 8;
+        fx += 10-2.5;
+        fw -= 20-5;
+
+        let lh = (fh-dotrad*2) / (nlevels-1);
+        let ly0 = fy+fh-lh;
+        let lspread = spread;
+        for (let l = 0; l < nlevels-1; l++) {
+            let lx0 = fx-7.5;
+            let lx1 = 0;
+            let ly1 = ly0+lh;
+            ctx.strokeStyle = "#33465b";
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = 2;
+            ctx.fillStyle = "rgba(51, 70, 91, 0.1)";
+            for (let i = 0; i <= nsegs; i++) {
+                let lx1 = (i/nsegs)*fw+fx;
+                if (i % lspread == lspread-1 || i == nsegs) {
+                    ctx.beginPath();
+                    ctx.moveTo(lx0, ly0-dotrad*2);
+                    ctx.lineTo(lx1+10-2.5, ly0-dotrad*2);
+                    ctx.lineTo(lx1+10-2.5, ly1-dotrad*2);
+                    ctx.lineTo(lx0, ly1-dotrad*2);
+                    ctx.lineTo(lx0, ly0-dotrad*2);
+                    // ctx.fill();
+                    ctx.stroke();
+                    lx0 = lx1+10-2.5;
+                }
+            }
+            ly0 -= lh;
+            lspread = lspread * spread;
+        }
+
+
+        // draw the base segments
+        ctx.fillStyle = "rgba(51, 70, 91, 0.40)";
+        for (let i = 0; i <= nsegs; i++) {
+            ctx.beginPath();
+            // ctx.arc((i/nsegs)*(fw-5)+fx+2.5, fy+fh, 5, 0, 2 * Math.PI);
+            ctx.arc((i/nsegs)*fw+fx, fy+fh+3, 8, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+
+
+        if (time < delay) {
+            // [wait]
+            return;
+        }
+
+        // up to which segment ?
+        let sidx = Math.floor(nsegs * perc);
+
+        // draw segments
+        ctx.strokeStyle = "#33465b";
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        p = convPoint(poly[0]);
+        ctx.moveTo(p.x, p.y);
+        for (let i = 1; i <= sidx; i++) {
+            let p = convPoint(poly[i]);
+            ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+
+        // draw the rects
+        lspread = spread;
+        for (let l = 0; l < nlevels; l++) {
+            let rect = { 
+                min: { x: poly[0][0], y: poly[0][1] }, 
+                max: { x: poly[0][0], y: poly[0][1] }, 
+            };
+            ctx.strokeStyle = "#33465b";
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = 1;
+            ctx.fillStyle = "rgba(51, 70, 91, 0.05)";
+            for (let i = 0; i <= sidx; i++) {
+                rect.min.x = Math.min(rect.min.x, poly[i][0]);
+                rect.min.y = Math.min(rect.min.y, poly[i][1]);
+                rect.max.x = Math.max(rect.max.x, poly[i][0]);
+                rect.max.y = Math.max(rect.max.y, poly[i][1]);
+                if (i % lspread == lspread-1 || i == sidx) {
+                    rect.min = convPoint([rect.min.x, rect.min.y]);
+                    rect.max = convPoint([rect.max.x, rect.max.y]);
+                    ctx.beginPath();
+                    ctx.moveTo(rect.min.x, rect.min.y);
+                    ctx.lineTo(rect.max.x, rect.min.y);
+                    ctx.lineTo(rect.max.x, rect.max.y);
+                    ctx.lineTo(rect.min.x, rect.max.y);
+                    ctx.lineTo(rect.min.x, rect.min.y);
+                    ctx.fill();
+                    ctx.stroke();
+                    rect = { 
+                        min: { x: poly[i][0], y: poly[i][1] }, 
+                        max: { x: poly[i][0], y: poly[i][1] }, 
+                    };
+                }
+            }
+            lspread = lspread * spread;
+        }
+
+        // draw the levels
+        lh = (fh-dotrad*2) / (nlevels-1);
+        ly0 = fy+fh-lh;
+        lspread = spread;
+        for (let l = 0; l < nlevels-1; l++) {
+            let lx0 = fx-7.5;
+            let lx1 = 0;
+            let ly1 = ly0+lh;
+            ctx.strokeStyle = "#33465b";
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = 2;
+            ctx.fillStyle = "rgba(51, 70, 91, "+(0.35*(1-(l*10/(nlevels*10-12))))+")";
+            for (let i = 0; i <= sidx; i++) {
+                let lx1 = (i/nsegs)*fw+fx;
+                if (i % lspread == lspread-1 || i == nsegs) {
+                    ctx.beginPath();
+                    ctx.moveTo(lx0, ly0-dotrad*2);
+                    ctx.lineTo(lx1+10-2.5, ly0-dotrad*2);
+                    ctx.lineTo(lx1+10-2.5, ly1-dotrad*2);
+                    ctx.lineTo(lx0, ly1-dotrad*2);
+                    ctx.lineTo(lx0, ly0-dotrad*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    lx0 = lx1+10-2.5;
+                }
+            }
+            ly0 -= lh;
+            lspread = lspread * spread;
+        }
+
+        
+        // draw the segments
+        ctx.fillStyle = "#33465b";
+        for (let i = 0; i <= sidx; i++) {
+            ctx.beginPath();
+            // ctx.arc((i/nsegs)*(fw-5)+fx+2.5, fy+fh, 5, 0, 2 * Math.PI);
+            ctx.arc((i/nsegs)*fw+fx, fy+fh+3, 9, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
+
+    function frame(time) {
+        draw(time);
+        window.requestAnimationFrame(frame);
+    }
+    window.requestAnimationFrame(frame);
+</script>
+</body>
+</html>

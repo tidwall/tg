@@ -1,0 +1,17 @@
+*.dSYM
+a.out
+*.test
+*.o
+*.svg
+*.profraw
+*.profdata
+*.cov.html
+libgeos
+fuzz-*
+slow-*
+crash-*
+corpus/
+relations/work.jsonc
+relate
+tmp/
+svg/

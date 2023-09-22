@@ -1,0 +1,362 @@
+[
+  {
+    "geoms": [
+      "POINT(0 0)",
+      "POINT(0 0)"
+    ],
+    "dims": [ 0, 0 ],
+    "relate": [ "0FFFFFFF2", "0FFFFFFF2" ],
+    "predicates": {
+      "equals":     ["T", "T"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "T"],
+      "within":     ["T", "T"],
+      "covers":     ["T", "T"],
+      "coveredby":  ["T", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "POINT(0 0)",
+      "POINT(1 0)"
+    ],
+    "dims": [ 0, 0 ],
+    "relate": [ "FF0FFF0F2", "FF0FFF0F2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "POINT(0 0)",
+      "POINT EMPTY"
+    ],
+    "dims": [ 0, 0 ],
+    "relate": [ "FF0FFFFF2", "FFFFFF0F2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "POINT EMPTY",
+      "POINT EMPTY"
+    ],
+    "dims": [ 0, 0 ],
+    "relate": [ "FFFFFFFF2", "FFFFFFFF2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "LINESTRING(0 0, 10 10, 20 0)",
+      "POINT(0 0)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "FF10F0FF2", "F0FFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "LINESTRING(0 0, 10 10, 20 0)",
+      "POINT(5 5)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "0F1FF0FF2", "0FFFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "LINESTRING(0 0, 10 10, 20 0)",
+      "POINT(10 10)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "0F1FF0FF2", "0FFFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "LINESTRING(0 0, 10 10, 20 0)",
+      "POINT(20 0)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "FF10F0FF2", "F0FFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "LINESTRING(1 1,2 2)",
+      "POINT(1.5 1.5)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "0F1FF0FF2", "0FFFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "LINESTRING(1 1,2 2,1 1,3 3,2 2)",
+      "POINT(2 2)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "FF10F0FF2", "F0FFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "POLYGON((0 0,10 0,10 10,0 10,0 0))",
+      "POINT(0 0)"
+    ],
+    "dims": [ 2, 0 ],
+    "relate": [ "FF20F1FF2", "F0FFFF212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))",
+      "POINT(0 0)"
+    ],
+    "dims": [ 2, 0 ],
+    "relate": [ "FF20F1FF2", "F0FFFF212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))",
+      "POINT(1 1)"
+    ],
+    "dims": [ 2, 0 ],
+    "relate": [ "0F2FF1FF2", "0FFFFF212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "POLYGON((0 0, 10 0, 10 10, 0 10, 0 0),(2 2,8 2,8 8,2 8,2 2))",
+      "POINT(5 5)"
+    ],
+    "dims": [ 2, 0 ],
+    "relate": [ "FF2FF10F2", "FF0FFF212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "POLYGON((0 0, 10 0, 10 10, 0 10, 0 0),(2 2,8 2,8 8,2 8,2 2))",
+      "POINT(6 6)"
+    ],
+    "dims": [ 2, 0 ],
+    "relate": [ "FF2FF10F2", "FF0FFF212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "LINESTRING (0 0,10 10)",
+      "POINT (15 15)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "FF1FF00F2", "FF0FFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      {"type":"Feature","id":"a","geometry":{"type":"Point","coordinates":[0,0]}},
+      {"type":"Feature","id":"b","geometry":{"type":"Point","coordinates":[0,0]}},
+    ],
+    "dims": [ 0, 0 ],
+    "relate": [ "0FFFFFFF2", "0FFFFFFF2" ],
+    "predicates": {
+      "equals":     ["T", "T"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "T"],
+      "within":     ["T", "T"],
+      "covers":     ["T", "T"],
+      "coveredby":  ["T", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "POINT(0 0)",
+      "MULTIPOINT(0 0)"
+    ],
+    "dims": [ 0, 0 ],
+    "relate": [ "0FFFFFFF2", "0FFFFFFF2" ],
+    "predicates": {
+      "equals":     ["T", "T"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "T"],
+      "within":     ["T", "T"],
+      "covers":     ["T", "T"],
+      "coveredby":  ["T", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  }
+]
