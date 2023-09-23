@@ -5,15 +5,6 @@
 TG is a geometry library for C that is small, fast, and easy to use.
 I designed it for programs that need real-time geospatial, such as geofencing, monitoring, and streaming analysis.
 
-<div align="center"
-><img src="docs/assets/br-both.png"        width="118"
-><img src="docs/assets/tx-both.png"        width="118"
-><img src="docs/assets/az-both.png"        width="118"
-><img src="docs/assets/ri-both.png"        width="118"
-><img src="docs/assets/circle-both.png"    width="118"
-><img src="docs/assets/random100-both.png" width="118"
-></div>
-
 ## Features
 
 - Implements OGC [Simple Features](https://en.wikipedia.org/wiki/Simple_Features) including Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, GeometryCollection. 
@@ -36,7 +27,7 @@ It's a non-goal for TG to be a full GIS library. Consider [GEOS](https://libgeos
 TG uses [entirely new](docs/POLYGON_INDEXING.md) indexing structures that speed up [geometry predicates](API.md#geometry-predicates). It can index more than 10GB per second of point data on modern hardware, while using less than 7% of additional memory, and can perform over 10 million point-in-polygon operations, even when using large polygons with over 10K points.
 
 The following benchmark provides an example of the point-in-polygon performance
-of TG when using a large polygon. In this case of Brazil, which has 39K points. (see image above)
+of TG when using a large polygon. In this case of Brazil, which has 39K points.
 
 <pre>
 <b>Brazil              ops/sec    ns/op  points  hits       built      bytes</b>
