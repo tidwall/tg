@@ -1,8 +1,8 @@
 // https://github.com/tidwall/tg
 //
 // Copyright 2023 Joshua J Baker. All rights reserved.
-// Use of this source code is governed by a license 
-// that can be found in the LICENSE file.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file.
 
 #include <math.h>
 #include <float.h>
