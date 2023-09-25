@@ -24,7 +24,7 @@ It's a non-goal for TG to be a full GIS library. Consider [GEOS](https://libgeos
 
 ## Performance
 
-TG uses [entirely new](docs/POLYGON_INDEXING.md) indexing structures that speed up [geometry predicates](docs/API.md#geometry-predicates). It can index more than 10GB per second of point data on modern hardware, while using less than 7% of additional memory, and can perform over 10 million point-in-polygon operations, even when using large polygons with over 10K points.
+TG uses [entirely new](docs/POLYGON_INDEXING.md) indexing structures that speed up [geometry predicates](docs/API.md#geometry-predicates). It can index more than 10GB per second of point data on modern hardware, while using less than 7% of additional memory, and can perform over 10 million point-in-polygon operations per second, even when using large polygons with over 10K points.
 
 The following benchmark provides an example of the point-in-polygon performance
 of TG when using a large polygon. In this case of Brazil, which has 39K points.
