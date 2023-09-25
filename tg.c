@@ -947,8 +947,10 @@ bool tg_segment_intersects_segment(struct tg_segment seg_a,
         if (!(((c.x-a.x <= 0) != (c.x-b.x <= 0))) ||
               ((c.y-a.y <= 0) != (c.y-b.y <= 0)))
         {
-            return (tg_segment_covers_point(seg_a, seg_b.a) || 
-                    tg_segment_covers_point(seg_a, seg_b.b));
+            return tg_segment_covers_point(seg_a, seg_b.a) || 
+                   tg_segment_covers_point(seg_a, seg_b.b) ||
+                   tg_segment_covers_point(seg_b, seg_a.a) ||
+                   tg_segment_covers_point(seg_b, seg_a.b);
         }
         return true;
     }
