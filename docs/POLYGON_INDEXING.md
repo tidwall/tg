@@ -5,7 +5,7 @@ I call them [Natural](#natural) & [YStripes](#ystripes). They make [spatial rela
 
 Here I'll mostly focus on how these index structures improve the "intersects" binary spatial predicate operation, specifically for point-in-polygon performance, but other operations such as "covers", "contains", "touches", etc. will benefit too.
 
-## Point-in-polyon
+## Point-in-polygon
 
 TG uses the [ray casting](https://en.wikipedia.org/wiki/Point_in_polygon) algorithm to find if a point is inside or outside of a polygon.
 
