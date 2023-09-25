@@ -188,10 +188,6 @@ $ cc -I. examples/intersects.c tg.c
 $ ./a.out 'POINT(15 15)' 'POLYGON((10 10,20 10,20 20,10 20,10 10))'
 ```
 
-## Contact
-
-Josh Baker on Mastodon [@tidwall@mastodon.social](https://mastodon.social/@tidwall) or (less) on Twitter [@tidwall](https://twitter.com/tidwall).
-
 ## License
 
 TG source code is available under the MIT [License](/LICENSE).
