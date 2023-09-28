@@ -206,12 +206,14 @@ struct tg_geom *tg_geom_new_geometrycollection_empty(void);
 /// Functions for working directly with the tg_point type.
 /// @{
 struct tg_rect tg_point_rect(struct tg_point point);
+bool tg_point_intersects_rect(struct tg_point a, struct tg_rect b);
 /// @}
 
 /// @defgroup SegmentFuncs Segment functions
 /// Functions for working directly with the tg_segment type.
 /// @{
 struct tg_rect tg_segment_rect(struct tg_segment s);
+bool tg_segment_intersects_segment(struct tg_segment a, struct tg_segment b);
 /// @}
 
 /// @defgroup RectFuncs Rectangle functions
@@ -220,6 +222,8 @@ struct tg_rect tg_segment_rect(struct tg_segment s);
 struct tg_rect tg_rect_expand(struct tg_rect rect, struct tg_rect other);
 struct tg_rect tg_rect_expand_point(struct tg_rect rect, struct tg_point point);
 struct tg_point tg_rect_center(struct tg_rect rect);
+bool tg_rect_intersects_rect(struct tg_rect a, struct tg_rect b);
+bool tg_rect_intersects_point(struct tg_rect a, struct tg_point b);
 /// @}
 
 /// @defgroup RingFuncs Ring functions

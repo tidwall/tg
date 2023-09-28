@@ -180,6 +180,7 @@ Functions for accessing various information about geometries, such as getting th
 - [tg_geom_extra_coords()](#group___geometry_accessors_1gac5115d2642b03552856865dad33dd494)
 - [tg_geom_num_extra_coords()](#group___geometry_accessors_1ga5f85cf4c143703ee227e3c35accbde8b)
 - [tg_geom_memsize()](#group___geometry_accessors_1ga4931914f5170cce2949cfdd79e34ef63)
+- [tg_geom_search()](#group___geometry_accessors_1gad18cdb2a4ab1fa711dce821a0868ecd2)
 
 
 <a name='group___geometry_predicates'></a>
@@ -280,6 +281,7 @@ Functions for working directly with the [tg_point](#structtg__point) type.
 
 
 - [tg_point_rect()](#group___point_funcs_1ga07ff1afb45368e2f511da5cb8e689943)
+- [tg_point_intersects_rect()](#group___point_funcs_1ga59e99021c916a5fe7a350aee695ef6d3)
 
 
 <a name='group___segment_funcs'></a>
@@ -290,6 +292,7 @@ Functions for working directly with the [tg_segment](#structtg__segment) type.
 
 
 - [tg_segment_rect()](#group___segment_funcs_1ga8218b7694fe5079da6ce0a241991cf78)
+- [tg_segment_intersects_segment()](#group___segment_funcs_1ga12b1ec6c72d4120391daff364d5c7b9b)
 
 
 <a name='group___rect_funcs'></a>
@@ -302,6 +305,8 @@ Functions for working directly with the [tg_rect](#structtg__rect) type.
 - [tg_rect_expand()](#group___rect_funcs_1gadc227cfc279d612269a142841d736c79)
 - [tg_rect_expand_point()](#group___rect_funcs_1gaad0df238f6f430d9cc6fd6b0c6807931)
 - [tg_rect_center()](#group___rect_funcs_1ga44be4970fbbbdfa9e2ceb338a938d262)
+- [tg_rect_intersects_rect()](#group___rect_funcs_1ga910f2b37e7c7b17f9c01bbddee871b11)
+- [tg_rect_intersects_point()](#group___rect_funcs_1gac4d6e61cc5260ed913c736fd71defe05)
 
 
 <a name='group___ring_funcs'></a>
@@ -1587,6 +1592,26 @@ Returns the allocation size of the geometry.
 **Return**
 
 - Size of geometry in bytes
+
+
+
+<a name='group___geometry_accessors_1gad18cdb2a4ab1fa711dce821a0868ecd2'></a>
+## tg_geom_search()
+```c
+void tg_geom_search(const struct tg_geom *geom, struct tg_rect rect, bool(*iter)(const struct tg_geom *geom, int index, void *udata), void *udata);
+```
+Iterates over all child geometries in geom that intersect rect 
+
+**Note**
+
+- Only iterates over collection types: TG_MULTIPOINT, TG_MULTILINESTRING, TG_MULTIPOLYGON, and TG_GEOMETRYCOLLECTION.
+- A GeoJSON FeatureCollection works as well.
+
+
+**See also**
+
+- [tg_geom_typeof()](#group___geometry_accessors_1ga7a2e146938fab50268b7798cb3bc91cc)
+- [Geometry accessors](#group___geometry_accessors)
 
 
 
@@ -3107,12 +3132,38 @@ Returns the minimum bounding rectangle of a point.
 
 
 
+<a name='group___point_funcs_1ga59e99021c916a5fe7a350aee695ef6d3'></a>
+## tg_point_intersects_rect()
+```c
+bool tg_point_intersects_rect(struct tg_point a, struct tg_rect b);
+```
+Tests whether a point fully intersects a rectangle. 
+
+**See also**
+
+- [Point functions](#group___point_funcs)
+
+
+
 <a name='group___segment_funcs_1ga8218b7694fe5079da6ce0a241991cf78'></a>
 ## tg_segment_rect()
 ```c
 struct tg_rect tg_segment_rect(struct tg_segment s);
 ```
 Returns the minimum bounding rectangle of a segment. 
+
+**See also**
+
+- [Segment functions](#group___segment_funcs)
+
+
+
+<a name='group___segment_funcs_1ga12b1ec6c72d4120391daff364d5c7b9b'></a>
+## tg_segment_intersects_segment()
+```c
+bool tg_segment_intersects_segment(struct tg_segment a, struct tg_segment b);
+```
+Tests whether a segment intersects another segment. 
 
 **See also**
 
@@ -3139,6 +3190,11 @@ Expands a rectangle to include an additional rectangle.
 - Expanded rectangle
 
 
+**See also**
+
+- [Rectangle functions](#group___rect_funcs)
+
+
 
 <a name='group___rect_funcs_1gaad0df238f6f430d9cc6fd6b0c6807931'></a>
 ## tg_rect_expand_point()
@@ -3159,6 +3215,11 @@ Expands a rectangle to include an additional point.
 - Expanded rectangle
 
 
+**See also**
+
+- [Rectangle functions](#group___rect_funcs)
+
+
 
 <a name='group___rect_funcs_1ga44be4970fbbbdfa9e2ceb338a938d262'></a>
 ## tg_rect_center()
@@ -3166,6 +3227,32 @@ Expands a rectangle to include an additional point.
 struct tg_point tg_rect_center(struct tg_rect rect);
 ```
 Returns the center point of a rectangle 
+
+**See also**
+
+- [Rectangle functions](#group___rect_funcs)
+
+
+
+<a name='group___rect_funcs_1ga910f2b37e7c7b17f9c01bbddee871b11'></a>
+## tg_rect_intersects_rect()
+```c
+bool tg_rect_intersects_rect(struct tg_rect a, struct tg_rect b);
+```
+Tests whether a rectangle intersects another rectangle. 
+
+**See also**
+
+- [Rectangle functions](#group___rect_funcs)
+
+
+
+<a name='group___rect_funcs_1gac4d6e61cc5260ed913c736fd71defe05'></a>
+## tg_rect_intersects_point()
+```c
+bool tg_rect_intersects_point(struct tg_rect a, struct tg_point b);
+```
+Tests whether a rectangle and a point intersect. 
 
 **See also**
 

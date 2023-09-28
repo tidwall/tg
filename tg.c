@@ -862,6 +862,7 @@ static bool rect_intersects_rect(struct tg_rect *a, struct tg_rect *b) {
 }
 
 /// Tests whether a rectangle intersects another rectangle.
+/// @see RectFuncs
 bool tg_rect_intersects_rect(struct tg_rect a, struct tg_rect b) {
     return rect_intersects_rect(&a, &b);
 }
@@ -1346,6 +1347,7 @@ static void rect_inflate_point(struct tg_rect *rect, struct tg_point *point) {
 /// @param rect Input rectangle
 /// @param other Input rectangle
 /// @return Expanded rectangle
+/// @see RectFuncs
 struct tg_rect tg_rect_expand(struct tg_rect rect, struct tg_rect other) {
     rect_inflate(&rect, &other);
     return rect;
@@ -1355,6 +1357,7 @@ struct tg_rect tg_rect_expand(struct tg_rect rect, struct tg_rect other) {
 /// @param rect Input rectangle
 /// @param point Input Point
 /// @return Expanded rectangle
+/// @see RectFuncs
 struct tg_rect tg_rect_expand_point(struct tg_rect rect, struct tg_point point)
 {
     rect_inflate_point(&rect, &point);
