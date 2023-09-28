@@ -495,6 +495,8 @@ struct icounterctx {
 };
 
 bool icounter(const struct tg_geom *geom, int index, void *udata) {
+    (void)geom;
+    (void)index;
     struct icounterctx *ctx = udata;
     ctx->count++;
     return true;
