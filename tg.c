@@ -170,6 +170,8 @@ struct multi {
     struct tg_geom **geoms;
     int ngeoms;
     struct tg_rect rect; // unioned rect child geometries
+    struct index *index; // geometry index, or NULL if not indexed
+    int *ixgeoms;        // indexed geometries, or NULL if not indexed
 };
 
 /// A geometry is the common generic type that can represent a Point,
@@ -482,7 +484,7 @@ static void *(*_malloc)(size_t) = NULL;
 static void *(*_realloc)(void*, size_t) = NULL;
 static void (*_free)(void*) = NULL;
 static enum tg_index default_index = TG_NATURAL;
-static int index_spread = 16;
+static int default_index_spread = 16;
 
 /// Allow for configuring a custom allocator.
 ///
@@ -562,11 +564,11 @@ enum tg_index tg_env_get_default_index(void) {
 void tg_env_set_index_spread(int spread) {
     // only allow spreads between 2 and 1024
     if (spread >= 2 && spread <= 4096) {
-        index_spread = spread;
+        default_index_spread = spread;
     }
 }
 int tg_env_get_index_spread(void) {
-    return index_spread;
+    return default_index_spread;
 }
 
 enum tg_index tg_index_with_spread(enum tg_index ix, int spread) {
@@ -585,7 +587,7 @@ enum tg_index tg_index_extract_spread(enum tg_index ix, int *spread) {
         ixspread++;
     }
     if (ixspread == 0) {
-        ixspread = index_spread;
+        ixspread = tg_env_get_index_spread();
     }
     if (spread) {
         *spread = ixspread;
@@ -1152,6 +1154,36 @@ static inline bool ixrect_intersects_ixrect(struct ixrect *a,
     if (a->min.y > b->max.y || a->max.y < b->min.y) return false;
     if (a->min.x > b->max.x || a->max.x < b->min.x) return false;
     return true;
+}
+
+static int index_spread(const struct index *index) {
+    return index ? index->spread : 0;
+}
+
+static int index_num_levels(const struct index *index) {
+    return index ? index->nlevels : 0;
+}
+
+static int index_level_num_rects(const struct index *index, int levelidx) {
+    if (!index) return 0;
+    if (levelidx < 0 || levelidx >= index->nlevels) return 0;
+    return index->levels[levelidx].nrects;
+}
+
+static struct tg_rect index_level_rect(const struct index *index, 
+    int levelidx, int rectidx)
+{
+    if (!index) return (struct tg_rect) { 0 };
+    if (levelidx < 0 || levelidx >= index->nlevels) {
+        return (struct tg_rect) { 0 };
+    }
+    const struct level *level = &index->levels[levelidx];
+    if (rectidx < 0 || rectidx >= level->nrects) {
+        return (struct tg_rect) { 0 };
+    }
+    struct tg_rect rect;
+    ixrect_to_tg_rect(&level->rects[rectidx], &rect);
+    return rect;
 }
 
 static int calc_num_keys(int spread, int level, int count) {
@@ -3945,19 +3977,222 @@ static struct tg_geom *geom_new_multi(enum tg_geom_type type, int ngeoms) {
     }
     memset(geom->multi->geoms, 0, ngeoms*sizeof(struct tg_geom*));
     geom->multi->ngeoms = ngeoms;
+
+    const int spread = 32;
+    if (ngeoms >= spread*2) {
+        int nlevels;
+        size_t ixsize = calc_index_size(spread, ngeoms, &nlevels);
+        geom->multi->index = tg_malloc(ixsize);
+        geom->multi->ixgeoms = tg_malloc(ngeoms*sizeof(int));
+        if (!geom->multi->index || !geom->multi->ixgeoms) {
+            if (geom->multi->index) tg_free(geom->multi->index);
+            if (geom->multi->ixgeoms) tg_free(geom->multi->ixgeoms);
+            tg_free(geom->multi->geoms);
+            tg_free(geom->multi);
+            tg_free(geom);
+            return NULL;
+        }
+        fill_index_struct(geom->multi->index, nlevels, ngeoms, spread, ixsize);
+    }
+
     return geom;
 }
 
-static void multi_geom_inflate_rect(struct tg_geom *geom) {
+// Fast 2D hilbert curve
+// https://github.com/rawrunprotected/hilbert_curves
+// Public Domain
+static uint32_t hilbert_xy_to_index(uint32_t x, uint32_t y) {
+    uint32_t A, B, C, D;
+    uint32_t a, b, c, d;
+    // Round (1) Initial prefix scan round, prime with x and y
+    a = x ^ y;
+    b = 0xFFFF ^ a;
+    c = 0xFFFF ^ (x | y);
+    d = x & (y ^ 0xFFFF);
+    A = a | (b >> 1);
+    B = (a >> 1) ^ a;
+    C = ((c >> 1) ^ (b & (d >> 1))) ^ c;
+    D = ((a & (c >> 1)) ^ (d >> 1)) ^ d;
+    // Round (2) 
+    a = A; b = B; c = C; d = D;
+    A = ((a & (a >> 2)) ^ (b & (b >> 2)));
+    B = ((a & (b >> 2)) ^ (b & ((a ^ b) >> 2)));
+    C ^= ((a & (c >> 2)) ^ (b & (d >> 2)));
+    D ^= ((b & (c >> 2)) ^ ((a ^ b) & (d >> 2)));
+    // Round (3) 
+    a = A; b = B; c = C; d = D;
+    A = ((a & (a >> 4)) ^ (b & (b >> 4)));
+    B = ((a & (b >> 4)) ^ (b & ((a ^ b) >> 4)));
+    C ^= ((a & (c >> 4)) ^ (b & (d >> 4)));
+    D ^= ((b & (c >> 4)) ^ ((a ^ b) & (d >> 4)));
+    // Round (4) Final round and projection
+    a = A; b = B; c = C; d = D;
+    C ^= ((a & (c >> 8)) ^ (b & (d >> 8)));
+    D ^= ((b & (c >> 8)) ^ ((a ^ b) & (d >> 8)));
+    // Undo transformation prefix scan
+    a = C ^ (C >> 1);
+    b = D ^ (D >> 1);
+    // Recover index bits
+    uint32_t i0 = x ^ y;
+    uint32_t i1 = b | (0xFFFF ^ (i0 | a));
+    // Interleave (i0)
+    i0 = (i0 | (i0 << 8)) & 0x00FF00FF;
+    i0 = (i0 | (i0 << 4)) & 0x0F0F0F0F;
+    i0 = (i0 | (i0 << 2)) & 0x33333333;
+    i0 = (i0 | (i0 << 1)) & 0x55555555;
+    // Interleave (i1)
+    i1 = (i1 | (i1 << 8)) & 0x00FF00FF;
+    i1 = (i1 | (i1 << 4)) & 0x0F0F0F0F;
+    i1 = (i1 | (i1 << 2)) & 0x33333333;
+    i1 = (i1 | (i1 << 1)) & 0x55555555;
+    return (i1 << 1) | i0;
+}
+
+uint32_t tg_point_hilbert(struct tg_point point, struct tg_rect rect) {
+    uint32_t ix = ((point.x - rect.min.x) / (rect.max.x - rect.min.x)) * 0xFFFF;
+    uint32_t iy = ((point.y - rect.min.y) / (rect.max.y - rect.min.y)) * 0xFFFF;
+    return hilbert_xy_to_index(ix, iy);
+}
+
+struct hildex {
+    uint32_t hilbert;
+    int index;
+};
+
+static int hilsort(const void *a, const void *b) {
+    const struct hildex *ha = a;
+    const struct hildex *hb = b;
+    return ha->hilbert < hb->hilbert ? -1 : ha->hilbert > hb->hilbert;
+}
+
+static bool multi_geom_inflate_index(struct multi *multi) {
+    // inflate multi index base level and mbr in one pass
+    struct index *index = multi->index;
+    int nlevels = index->nlevels;
+    int spread = index->spread;
+
+    // fill the hilbert indexes
+    struct hildex *hildexes = tg_malloc(sizeof(struct hildex)*multi->ngeoms);
+    if (!hildexes) {
+        return false;
+    }
+    for (int i = 0; i < multi->ngeoms; i++) {
+        struct tg_point center = tg_rect_center(tg_geom_rect(multi->geoms[i]));
+        hildexes[i].index = i;
+        hildexes[i].hilbert = tg_point_hilbert(center, multi->rect);
+    }
+    qsort(hildexes, multi->ngeoms, sizeof(struct hildex), hilsort);
+    for (int i = 0; i < multi->ngeoms; i++) {
+        multi->ixgeoms[i] = hildexes[i].index;
+    }
+    tg_free(hildexes);
+
+    struct ixrect ixrect;
+    struct tg_rect rect0 = tg_geom_rect(multi->geoms[multi->ixgeoms[0]]);
+    tg_rect_to_ixrect(&rect0, &ixrect);
+    int j = 1;
+    int k = 0;
+    for (int i = 1; i < multi->ngeoms; i++) {
+        struct tg_rect rect = tg_geom_rect(multi->geoms[multi->ixgeoms[i]]);
+        multi->rect = tg_rect_expand(multi->rect, rect);
+        struct ixrect ixrect2;
+        tg_rect_to_ixrect(&rect, &ixrect2);
+        if (j == spread) {
+            index->levels[nlevels-1].rects[k] = ixrect;
+            k++;
+            j = 1;
+            ixrect = ixrect2;
+        } else {
+            ixrect_expand(&ixrect, &ixrect2);
+            j++;
+        }
+    }
+    if (k < index->levels[nlevels-1].nrects) {
+        index->levels[nlevels-1].rects[k] = ixrect;
+        k++;
+    }
+    for (int lvl = nlevels-1; lvl > 0; lvl--) {
+        struct level *level = &index->levels[lvl];
+        struct ixrect ixrect = level->rects[0];
+        int j = 1;
+        int k = 0;
+        for (int i = 1; i < level->nrects; i++) {
+            if (j == spread) {
+                index->levels[lvl-1].rects[k] = ixrect;
+                k++;
+                j = 1;
+                ixrect = index->levels[lvl].rects[i];
+            } else {
+                ixrect_expand(&ixrect, &index->levels[lvl].rects[i]);
+                j++;
+            }
+        }
+        if (k < index->levels[lvl-1].nrects) {
+            index->levels[lvl-1].rects[k] = ixrect;
+            k++;
+        }
+    }
+    return true;
+}
+
+static struct tg_geom *multi_geom_inflate_rect(struct tg_geom *geom) {
     if (geom->multi->ngeoms == 0) {
         geom->multi->rect = (struct tg_rect){ 0 };
-        return;
+        return geom;
     }
     geom->multi->rect = tg_geom_rect(geom->multi->geoms[0]);
     for (int i = 1; i < geom->multi->ngeoms; i++) {
-        geom->multi->rect = tg_rect_expand(geom->multi->rect, 
-            tg_geom_rect(geom->multi->geoms[i]));
+        struct tg_rect rect = tg_geom_rect(geom->multi->geoms[i]);
+        geom->multi->rect = tg_rect_expand(geom->multi->rect, rect);
     }
+    if (geom->multi->index) {
+        if (!multi_geom_inflate_index(geom->multi)) {
+            tg_geom_free(geom);
+            return NULL;
+        }
+    }
+    return geom;
+}
+
+static const struct multi *geom_multi(const struct tg_geom *geom) {
+    if (geom && geom->head.base == BASE_GEOM && (
+        geom->head.type == TG_MULTIPOINT ||
+        geom->head.type == TG_MULTILINESTRING ||
+        geom->head.type == TG_MULTIPOLYGON ||
+        geom->head.type == TG_GEOMETRYCOLLECTION))
+    {
+        return geom->multi;
+    }
+    return NULL;
+}
+
+static const struct index *geom_multi_index(const struct tg_geom *geom) {
+    const struct multi *multi = geom_multi(geom);
+    return multi ? multi->index : NULL;
+}
+
+int tg_geom_multi_index_spread(const struct tg_geom *geom) {
+    const struct index *index = geom_multi_index(geom);
+    return index_spread(index);
+}
+
+int tg_geom_multi_index_num_levels(const struct tg_geom *geom) {
+    const struct index *index = geom_multi_index(geom);
+    return index_num_levels(index);
+}
+
+int tg_geom_multi_index_level_num_rects(const struct tg_geom *geom, 
+    int levelidx)
+{
+    const struct index *index = geom_multi_index(geom);
+    return index_level_num_rects(index, levelidx);
+}
+
+struct tg_rect tg_geom_multi_index_level_rect(const struct tg_geom *geom, 
+    int levelidx, int rectidx)
+{
+    const struct index *index = geom_multi_index(geom);
+    return index_level_rect(index, levelidx, rectidx);
 }
 
 /// Creates a MultiPoint geometry.
@@ -3975,17 +4210,11 @@ struct tg_geom *tg_geom_new_multipoint(const struct tg_point *points,
     for (int i = 0; i < geom->multi->ngeoms; i++) {
         geom->multi->geoms[i] = tg_geom_new_point(points[i]);
         if (!geom->multi->geoms[i]) {
-            for (int j = 0; j < i; j++) {
-                tg_geom_free(geom->multi->geoms[j]);
-            }
-            tg_free(geom->multi->geoms);
-            tg_free(geom->multi);
-            tg_free(geom);
+            tg_geom_free(geom);
             return NULL;
         }
     }
-    multi_geom_inflate_rect(geom);
-    return geom;
+    return multi_geom_inflate_rect(geom);
 }
 
 /// Creates an empty MultiPoint geometry.
@@ -4012,8 +4241,7 @@ struct tg_geom *tg_geom_new_multilinestring(const struct tg_line *const lines[],
     for (int i = 0; i < geom->multi->ngeoms; i++) {
         geom->multi->geoms[i] = (struct tg_geom*)tg_line_clone(lines[i]);
     }
-    multi_geom_inflate_rect(geom);
-    return geom;
+    return multi_geom_inflate_rect(geom);
 }
 
 /// Creates an empty MultiLineString geometry.
@@ -4040,8 +4268,7 @@ struct tg_geom *tg_geom_new_multipolygon(const struct tg_poly *const polys[],
     for (int i = 0; i < geom->multi->ngeoms; i++) {
         geom->multi->geoms[i] = (struct tg_geom*)tg_poly_clone(polys[i]);
     }
-    multi_geom_inflate_rect(geom);
-    return geom;
+    return multi_geom_inflate_rect(geom);
 }
 
 /// Creates an empty MultiPolygon geometry.
@@ -4068,8 +4295,7 @@ struct tg_geom *tg_geom_new_geometrycollection(
     for (int i = 0; i < geom->multi->ngeoms; i++) {
         geom->multi->geoms[i] = tg_geom_clone(geoms[i]);
     }
-    multi_geom_inflate_rect(geom);
-    return geom;
+    return multi_geom_inflate_rect(geom);
 }
 
 /// Creates an empty GeometryCollection geometry.
@@ -4412,6 +4638,12 @@ static void geom_free(struct tg_geom *geom) {
                     tg_geom_free(geom->multi->geoms[i]);
                 }
                 tg_free(geom->multi->geoms);
+            }
+            if (geom->multi->index) {
+                tg_free(geom->multi->index);
+            }
+            if (geom->multi->ixgeoms) {
+                tg_free(geom->multi->ixgeoms);
             }
             tg_free(geom->multi);
         }
@@ -4972,6 +5204,21 @@ static bool poly_intersects_geom(struct tg_poly *poly,
     return false;
 }
 
+struct multiiterctx {
+    bool isect;
+    const struct tg_geom *other;
+};
+
+static bool multiiter(const struct tg_geom *geom, int index, void *udata) {
+    (void)index;
+    struct multiiterctx *ctx = udata;
+    if (tg_geom_intersects(geom, ctx->other)) {
+        ctx->isect = true;
+        return false;
+    }
+    return true;
+}
+
 static bool base_geom_intersects_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
@@ -4986,16 +5233,11 @@ static bool base_geom_intersects_geom(const struct tg_geom *geom,
         case TG_MULTIPOINT: 
         case TG_MULTILINESTRING: 
         case TG_MULTIPOLYGON:
-        case TG_GEOMETRYCOLLECTION: 
-            if (geom->multi) {
-                for (int i = 0; i < geom->multi->ngeoms; i++) {
-                    if (tg_geom_intersects(geom->multi->geoms[i], other)) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
+        case TG_GEOMETRYCOLLECTION: {
+            struct multiiterctx ctx = { .other = other };
+            tg_geom_search(geom, tg_geom_rect(geom), multiiter, &ctx);
+            return ctx.isect;
+        }}
     }
     return false;
 }
@@ -5932,8 +6174,8 @@ double tg_geom_m(const struct tg_geom *geom) {
 /// @see tg_ring_index_level_rect()
 /// @see RingFuncs
 int tg_ring_index_spread(const struct tg_ring *ring) {
-    if (!ring || !ring->index) return 0;
-    return ring->index->spread;
+    struct index *index = ring ? ring->index : NULL;
+    return index_spread(index);
 }
 
 /// Returns the number of levels.
@@ -5945,8 +6187,8 @@ int tg_ring_index_spread(const struct tg_ring *ring) {
 /// @see tg_ring_index_level_rect()
 /// @see RingFuncs
 int tg_ring_index_num_levels(const struct tg_ring *ring) {
-    if (!ring || !ring->index) return 0;
-    return ring->index->nlevels;
+    struct index *index = ring ? ring->index : NULL;
+    return index_num_levels(index);
 }
 
 /// Returns the number of rectangles at level.
@@ -5959,9 +6201,8 @@ int tg_ring_index_num_levels(const struct tg_ring *ring) {
 /// @see tg_ring_index_level_rect()
 /// @see RingFuncs
 int tg_ring_index_level_num_rects(const struct tg_ring *ring, int levelidx) {
-    if (!ring || !ring->index) return 0;
-    if (levelidx < 0 || levelidx >= ring->index->nlevels) return 0;
-    return ring->index->levels[levelidx].nrects;
+    struct index *index = ring ? ring->index : NULL;
+    return index_level_num_rects(index, levelidx);
 }
 
 /// Returns a specific level rectangle.
@@ -5978,17 +6219,8 @@ int tg_ring_index_level_num_rects(const struct tg_ring *ring, int levelidx) {
 struct tg_rect tg_ring_index_level_rect(const struct tg_ring *ring, 
     int levelidx, int rectidx)
 {
-    if (!ring || !ring->index) return (struct tg_rect) { 0 };
-    if (levelidx < 0 || levelidx >= ring->index->nlevels) {
-        return (struct tg_rect) { 0 };
-    }
-    struct level *level = &ring->index->levels[levelidx];
-    if (rectidx < 0 || rectidx >= level->nrects) {
-        return (struct tg_rect) { 0 };
-    }
-    struct tg_rect rect;
-    ixrect_to_tg_rect(&level->rects[rectidx], &rect);
-    return rect;
+    struct index *index = ring ? ring->index : NULL;
+    return index_level_rect(index, levelidx, rectidx);
 }
 
 /// Get the string representation of a geometry type. 
@@ -13927,4 +14159,80 @@ bool tg_geom_intersects_rect(const struct tg_geom *a, struct tg_rect b) {
     struct tg_ring *ring = stack_ring();
     rect_to_ring(b, ring);
     return tg_geom_intersects(a, (struct tg_geom*)ring);
+}
+
+static bool multi_index_search(const struct multi *multi, struct tg_rect rect,
+    int levelidx, int startidx,
+    bool (*iter)(const struct tg_geom *geom, int index, void *udata),
+    void *udata)
+{
+    const struct index *index = multi->index;
+    if (levelidx == index->nlevels) {
+        // leaf
+        int s = startidx;
+        int e = s+index->spread;
+        if (e > multi->ngeoms) {
+            e = multi->ngeoms;
+        }
+        for (int i = s; i < e; i++) {
+            int index = multi->ixgeoms[i];
+            const struct tg_geom *child = multi->geoms[index];
+            if (tg_rect_intersects_rect(tg_geom_rect(child), rect)) {
+                if (!iter(child, index, udata)) {
+                    return false;
+                }
+            }
+        }
+    } else {
+        // branch
+        const struct level *level = &index->levels[levelidx];
+        int s = startidx;
+        int e = s+index->spread;
+        if (e > level->nrects) {
+            e = level->nrects;
+        }
+        for (int i = s; i < e; i++) {
+            struct tg_rect brect;
+            ixrect_to_tg_rect(&level->rects[i], &brect);
+            if (tg_rect_intersects_rect(brect, rect)) {
+                if (!multi_index_search(multi, rect, levelidx+1, 
+                    i*index->spread, iter, udata))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+/// Iterates over all child geometries in geom that intersect rect
+/// @note Only iterates over collection types: TG_MULTIPOINT, 
+/// TG_MULTILINESTRING, TG_MULTIPOLYGON, and TG_GEOMETRYCOLLECTION.
+/// @note A GeoJSON FeatureCollection works as well.
+/// @see tg_geom_typeof()
+/// @see GeometryAccessors
+void tg_geom_search(const struct tg_geom *geom, struct tg_rect rect,
+    bool (*iter)(const struct tg_geom *geom, int index, void *udata),
+    void *udata)
+{
+    const struct multi *multi = geom_multi(geom);
+    if (!iter || !multi) return;
+    if (!tg_rect_intersects_rect(tg_geom_rect(geom), rect)) {
+        return;
+    }
+    if (!multi->index) {
+        // sequential search
+        for (int i = 0; i < multi->ngeoms; i++) {
+            const struct tg_geom *child = multi->geoms[i];
+            if (tg_rect_intersects_rect(tg_geom_rect(child), rect)) {
+                if (!iter(child, i, udata)) {
+                    return;
+                }
+            } 
+        }
+    } else {
+        // indexed search
+        multi_index_search(multi, rect, 0, 0, iter, udata);
+    }
 }

@@ -118,6 +118,9 @@ double tg_geom_m(const struct tg_geom *geom);
 const double *tg_geom_extra_coords(const struct tg_geom *geom);
 int tg_geom_num_extra_coords(const struct tg_geom *geom);
 size_t tg_geom_memsize(const struct tg_geom *geom);
+void tg_geom_search(const struct tg_geom *geom, struct tg_rect rect,
+    bool (*iter)(const struct tg_geom *geom, int index, void *udata),
+    void *udata);
 /// @}
 
 /// @defgroup GeometryPredicates Geometry predicates

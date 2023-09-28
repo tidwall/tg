@@ -218,7 +218,11 @@ bool tg_poly_touches_line(const struct tg_poly *a, const struct tg_line *b);
 enum tg_index tg_env_get_default_index(void);
 int tg_env_get_index_spread(void);
 enum tg_index tg_index_with_spread(enum tg_index ix, int spread);
-bool tg_collinear(struct tg_point a, struct tg_point b, struct tg_point c);
+int tg_geom_multi_index_spread(const struct tg_geom *geom);
+int tg_geom_multi_index_num_levels(const struct tg_geom *geom);
+int tg_geom_multi_index_level_num_rects(const struct tg_geom *geom, int levelidx);
+struct tg_rect tg_geom_multi_index_level_rect(const struct tg_geom *geom, int levelidx, int rectidx);
+uint32_t tg_point_hilbert(struct tg_point point, struct tg_rect rect);
 
 uint64_t mkrandseed(void) {
     uint64_t seed = 0;
