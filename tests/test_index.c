@@ -533,6 +533,16 @@ struct tg_geom *test_index_multi_step(int npolys, double nsecs) {
     assert(polys);
     struct tg_geom *geom = tg_geom_new_multipolygon((void*)polys, npolys);
     assert(geom);
+
+    for (int i = 0; i < npolys; i++) {
+        tg_poly_free(polys[i]);
+    }
+    free(polys);
+
+
+    struct tg_geom *geom2 = tg_geom_copy(geom);
+    assert(geom2);
+
     double start = now();
     struct tg_rect world_ext = {
         { world.min.x-10, world.min.y-10 },
@@ -546,19 +556,20 @@ struct tg_geom *test_index_multi_step(int npolys, double nsecs) {
         tg_geom_search(geom, rect, icounter, &ctx0);
         struct icounterctx ctx1 = { 0 };
         for (int j = 0; j < npolys; j++) {
-            if (tg_geom_intersects_rect((struct tg_geom*)polys[j], rect)) {
+            struct tg_geom *poly = (struct tg_geom*)tg_geom_poly_at(geom, j);
+            if (tg_geom_intersects_rect(poly, rect)) {
                 ctx1.count++;
             }
         }
+        struct icounterctx ctx2 = { 0 };
+        tg_geom_search(geom2, rect, icounter, &ctx2);
         assert(ctx0.count == ctx1.count);
+        assert(ctx0.count == ctx2.count);
         steps++;
     }
     (void)steps;
-    // printf("%d\n", steps);
-    for (int i = 0; i < npolys; i++) {
-        tg_poly_free(polys[i]);
-    }
-    free(polys);
+    tg_geom_free(geom2);
+
     return geom;
 }
 
@@ -582,20 +593,31 @@ void test_index_chaos(void) {
     struct tg_rect world = R(-180, -90, 180, 90);
     struct tg_poly **polys;
 
-    npolys = 1000;
+    npolys = 65;
     polys = gen_rand_polys(npolys, world, true);
     assert(polys);
 
-
     int failures = 0;
-    while (failures < 100) {
-        struct tg_geom *geom = tg_geom_new_multipolygon((void*)polys, npolys);
-        if (!geom) {
-            failures++;
-        } else {
+    struct tg_geom *geom = NULL;
+    while (failures < 1000 || !geom) {
+        if (geom) {
             tg_geom_free(geom);
         }
+        geom = tg_geom_new_multipolygon((void*)polys, npolys);
+        if (!geom) {
+            failures++;
+        }
     }
+    failures = 0;
+    while (failures < 300000) {
+        struct tg_geom *geom2 = tg_geom_copy(geom);
+        if (!geom2) {
+            failures++;
+        } else {
+            tg_geom_free(geom2);
+        }
+    }
+    tg_geom_free(geom);
 
     for (int i = 0; i < npolys; i++) {
         tg_poly_free(polys[i]);

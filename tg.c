@@ -4802,6 +4802,12 @@ static size_t geom_memsize(const struct tg_geom *geom) {
             for (int i = 0; i < geom->multi->ngeoms; i++) {
                 size += tg_geom_memsize(geom->multi->geoms[i]);
             }
+            if (geom->multi->index) {
+                size += geom->multi->index->memsz;
+            }
+            if (geom->multi->ixgeoms) {
+                size += geom->multi->ngeoms*sizeof(int);
+            }
         }
         break;
     }
@@ -14079,14 +14085,15 @@ static struct tg_geom *geom_copy(const struct tg_geom *geom) {
                 goto fail;
             }
             memset(geom2->multi, 0, sizeof(struct multi));
+            geom2->multi->rect = geom->multi->rect;
             if (geom->multi->geoms) {
                 size_t gsize = sizeof(struct tg_geom*)*geom->multi->ngeoms;
                 geom2->multi->geoms = tg_malloc(gsize);
                 if (!geom2->multi->geoms) {
                     goto fail;
                 }
-                geom2->multi->ngeoms = geom->multi->ngeoms;
                 memset(geom2->multi->geoms, 0, gsize);
+                geom2->multi->ngeoms = geom->multi->ngeoms;
                 for (int i = 0; i < geom->multi->ngeoms; i++) {
                     const struct tg_geom *child = geom->multi->geoms[i];
                     geom2->multi->geoms[i] = tg_geom_copy(child);
@@ -14094,6 +14101,23 @@ static struct tg_geom *geom_copy(const struct tg_geom *geom) {
                         goto fail;
                     }
                 }
+            }
+            if (geom->multi->index) {
+                geom2->multi->index = tg_malloc(geom->multi->index->memsz);
+                if (!geom2->multi->index) {
+                    goto fail;
+                }
+                memcpy(geom2->multi->index, geom->multi->index, 
+                    geom->multi->index->memsz);
+            }
+            if (geom->multi->ixgeoms) {
+                geom2->multi->ixgeoms = tg_malloc(
+                    geom->multi->ngeoms*sizeof(int));
+                if (!geom2->multi->ixgeoms) {
+                    goto fail;
+                }
+                memcpy(geom2->multi->ixgeoms, geom->multi->ixgeoms,
+                    geom->multi->ngeoms*sizeof(int));
             }
         }
         break;
