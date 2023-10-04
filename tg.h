@@ -268,7 +268,8 @@ void tg_ring_ring_search(const struct tg_ring *a, const struct tg_ring *b,
     bool (*iter)(struct tg_segment aseg, int aidx, struct tg_segment bseg, 
         int bidx, void *udata),
     void *udata);
-
+double tg_ring_area(const struct tg_ring *ring);
+double tg_ring_perimeter(const struct tg_ring *ring);
 /// @}
 
 /// @defgroup LineFuncs Line functions
@@ -308,6 +309,7 @@ void tg_line_line_search(const struct tg_line *a, const struct tg_line *b,
     bool (*iter)(struct tg_segment aseg, int aidx, struct tg_segment bseg, 
         int bidx, void *udata),
     void *udata);
+double tg_line_length(const struct tg_line *line);
 /// @}
 
 /// @defgroup PolyFuncs Polygon functions

@@ -344,6 +344,8 @@ tg_geom_interects((struct tg_geom*)ring, geom);
 - [tg_ring_nearest_segment()](#group___ring_funcs_1ga716e10054b4bda84efb259d57aff5015)
 - [tg_ring_line_search()](#group___ring_funcs_1gabee40f4a66c2ebb4516a9f980ff5d998)
 - [tg_ring_ring_search()](#group___ring_funcs_1gacd2c483213d8110c9373e8e47bd9f49e)
+- [tg_ring_area()](#group___ring_funcs_1gabe14408b3ad596ed14b4ce698c2e7826)
+- [tg_ring_perimeter()](#group___ring_funcs_1ga0d063ecfef895e21f6d7520db05d302e)
 
 
 <a name='group___line_funcs'></a>
@@ -379,6 +381,7 @@ tg_geom_interects((struct tg_geom*)line, geom);
 - [tg_line_index_level_rect()](#group___line_funcs_1gacc18e4ddb48ccc717f61f298fd6ae970)
 - [tg_line_nearest_segment()](#group___line_funcs_1gaa85835e9619ba7d8557fda3335a0353a)
 - [tg_line_line_search()](#group___line_funcs_1gafef8ca6e5381e93d4c4952343597c0e1)
+- [tg_line_length()](#group___line_funcs_1ga994796f0088c82bb0672d84f1a1ce9d1)
 
 
 <a name='group___poly_funcs'></a>
@@ -3834,6 +3837,22 @@ Iterates over all segments in ring A that intersect with segments in ring B.
 
 
 
+<a name='group___ring_funcs_1gabe14408b3ad596ed14b4ce698c2e7826'></a>
+## tg_ring_area()
+```c
+double tg_ring_area(const struct tg_ring *ring);
+```
+Calculate the area of a ring. 
+
+
+<a name='group___ring_funcs_1ga0d063ecfef895e21f6d7520db05d302e'></a>
+## tg_ring_perimeter()
+```c
+double tg_ring_perimeter(const struct tg_ring *ring);
+```
+Calculate the perimeter length of a ring. 
+
+
 <a name='group___line_funcs_1ga7f834a7213c8d87d8b7c7117bdf8bf63'></a>
 ## tg_line_new()
 ```c
@@ -4324,6 +4343,14 @@ Iterates over all segments in line A that intersect with segments in line B.
 
 - [Line functions](#group___line_funcs)
 
+
+
+<a name='group___line_funcs_1ga994796f0088c82bb0672d84f1a1ce9d1'></a>
+## tg_line_length()
+```c
+double tg_line_length(const struct tg_line *line);
+```
+Calculate the length of a line. 
 
 
 <a name='group___poly_funcs_1ga56c2615488ca202baa944c85c20a40f1'></a>

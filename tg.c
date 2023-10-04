@@ -13511,13 +13511,15 @@ struct tg_geom *tg_parse_hex(const char *hex) {
     return tg_parse_hexn_ix(hex, hex?strlen(hex):0, TG_DEFAULT);
 }
 
-static double ring_area(const struct tg_ring *ring) {
+/// Calculate the area of a ring.
+double tg_ring_area(const struct tg_ring *ring) {
     if (tg_ring_empty(ring)) return 0;
     // The ring area has already been calculated by process_points.
     return ring->area;
 }
 
-static double ring_perimeter(const struct tg_ring *ring) {
+/// Calculate the perimeter length of a ring.
+double tg_ring_perimeter(const struct tg_ring *ring) {
     if (tg_ring_empty(ring)) return 0;
     int nsegs = tg_ring_num_segments(ring);
     double perim = 0;
@@ -13538,8 +13540,8 @@ double tg_ring_polsby_popper_score(const struct tg_ring *ring) {
     // and all other shapes will be smaller. Itty bitty scores mean the
     // polygon is really something nuts or has bad data.
     double score = 0.0;
-    double perim = ring_perimeter(ring);
-    double area = ring_area(ring);
+    double perim = tg_ring_perimeter(ring);
+    double area = tg_ring_area(ring);
     if (perim > 0) {
         score = (area * M_PI * 4) / (perim * perim);
     }
@@ -14262,4 +14264,9 @@ void tg_geom_search(const struct tg_geom *geom, struct tg_rect rect,
         // indexed search
         multi_index_search(multi, rect, 0, 0, iter, udata);
     }
+}
+
+/// Calculate the length of a line.
+double tg_line_length(const struct tg_line *line) {
+    return tg_ring_perimeter((struct tg_ring*)line);
 }

@@ -144,7 +144,7 @@ void test_line_various() {
     assert(tg_line_memsize(NULL) == 0);
     tg_line_free(line2);
     assert(!tg_line_copy(0));
-
+    assert(tg_line_length(LINE(u1)) == 30.0);
 }
 
 int main(int argc, char **argv) {

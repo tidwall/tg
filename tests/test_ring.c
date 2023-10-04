@@ -1354,6 +1354,8 @@ void test_ring_various() {
     assert(tg_ring_contains_line(0, (struct tg_line*)RING(az), 0, 0) == 0);
     assert(tg_ring_contains_line(0, 0, 0, 0) == 0);
 
+    assert(tg_ring_perimeter(RING(u1)) == 40.0);
+    assert(tg_ring_area(RING(u1)) == 100.0);
 }
 
 void test_ring_pip(void) {
