@@ -234,7 +234,7 @@ bool tg_rect_intersects_point(struct tg_rect a, struct tg_point b);
 /// must upcast the ring to a tg_geom, like such:
 ///
 /// ```
-/// tg_geom_interects((struct tg_geom*)ring, geom);
+/// tg_geom_intersects((struct tg_geom*)ring, geom);
 /// ```
 /// @{
 struct tg_ring *tg_ring_new(const struct tg_point *points, int npoints);
@@ -280,7 +280,7 @@ double tg_ring_perimeter(const struct tg_ring *ring);
 /// must upcast the line to a tg_geom, like such:
 ///
 /// ```
-/// tg_geom_interects((struct tg_geom*)line, geom);
+/// tg_geom_intersects((struct tg_geom*)line, geom);
 /// ```
 /// @{
 struct tg_line *tg_line_new(const struct tg_point *points, int npoints);
@@ -320,7 +320,7 @@ double tg_line_length(const struct tg_line *line);
 /// must upcast the poly to a tg_geom, like such:
 ///
 /// ```
-/// tg_geom_interects((struct tg_geom*)poly, geom);
+/// tg_geom_intersects((struct tg_geom*)poly, geom);
 /// ```
 /// @{
 struct tg_poly *tg_poly_new(const struct tg_ring *exterior, const struct tg_ring *const holes[], int nholes);
