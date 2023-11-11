@@ -317,7 +317,7 @@ Functions for working directly with the [tg_ring](#structtg__ring) type.
 There are no direct spatial predicates for [tg_ring](#structtg__ring). If you want to perform operations like "intersects" or "covers" then you must upcast the ring to a [tg_geom](#structtg__geom), like such:
 
 ```c
-tg_geom_interects((struct tg_geom*)ring, geom);
+tg_geom_intersects((struct tg_geom*)ring, geom);
 ```
  
 
@@ -356,7 +356,7 @@ Functions for working directly with the [tg_line](#structtg__line) type.
 There are no direct spatial predicates for [tg_line](#structtg__line). If you want to perform operations like "intersects" or "covers" then you must upcast the line to a [tg_geom](#structtg__geom), like such:
 
 ```c
-tg_geom_interects((struct tg_geom*)line, geom);
+tg_geom_intersects((struct tg_geom*)line, geom);
 ```
  
 
@@ -392,7 +392,7 @@ Functions for working directly with the [tg_poly](#structtg__poly) type.
 There are no direct spatial predicates for [tg_poly](#structtg__poly). If you want to perform operations like "intersects" or "covers" then you must upcast the poly to a [tg_geom](#structtg__geom), like such:
 
 ```c
-tg_geom_interects((struct tg_geom*)poly, geom);
+tg_geom_intersects((struct tg_geom*)poly, geom);
 ```
  
 
