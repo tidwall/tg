@@ -4,7 +4,7 @@
 <p align="center">
 <a href="docs/API.md"><img src="https://img.shields.io/badge/api-reference-blue.svg?style=flat-square" alt="API Reference"></a>
 </p>
-d
+
 TG is a geometry library for C that is small, fast, and easy to use.
 I designed it for programs that need real-time geospatial, such as geofencing, monitoring, and streaming analysis.
 
