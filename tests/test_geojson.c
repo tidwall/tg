@@ -1014,11 +1014,26 @@ void test_geojson_various() {
     tg_geom_free(geom);
 }
 
+void test_geojson_big_shapes() {
+    struct tg_geom *geom = load_geom("bc", TG_NONE);
+    size_t n = tg_geom_geojson(geom, 0, 0);
+    char *buf = malloc(n+1);
+    assert(buf);
+    size_t n2 = tg_geom_geojson(geom, buf, n+1);
+    assert(n2 == n); 
+    struct tg_geom *geom2 = tg_parse_geojson_ix(buf, TG_NONE);
+    free(buf);
+    assert(tg_geom_equals(geom, geom2));
+    tg_geom_free(geom);
+    tg_geom_free(geom2);
+}
+
 int main(int argc, char **argv) {
     seedrand();
     do_test(test_geojson_basic_syntax);
     do_test(test_geojson_feature);
     do_test(test_geojson_various);
+    do_test(test_geojson_big_shapes);
     do_chaos_test(test_geojson_chaos);
     return 0;
 }

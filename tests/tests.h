@@ -439,7 +439,7 @@ bool eqish(double a, double b) {
 #define v3 {10, 0}, {5, 10}, {0, 0}
 #define v4 {10, 10}, {0, 5}, {10, 0}
 
-#include "states.h"
+#include "shapes.h"
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wunknown-warning-option"
@@ -740,15 +740,13 @@ struct tg_geom *_load_geom(const char *name, enum tg_index ix, bool flipped) {
         }
         geom = (struct tg_geom*)load_random_ring(npoints, ix);
     } else if (strcmp(name, "br") == 0) {
-        char *br = read_file("br.geojson", 0);
-        assert(br);
-        geom = tg_parse_geojson_ix(br, ix);
-        free(br);
+        struct tg_point points[] = { br };
+        size_t npoints = sizeof(points)/sizeof(struct tg_point);
+        geom = (struct tg_geom *)tg_ring_new_ix(points, npoints, ix);
     } else if (strcmp(name, "bc") == 0) {
-        char *br = read_file("bc.geojson", 0);
-        assert(br);
-        geom = tg_parse_geojson_ix(br, ix);
-        free(br);
+        struct tg_point points[] = { bc };
+        size_t npoints = sizeof(points)/sizeof(struct tg_point);
+        geom = (struct tg_geom *)tg_ring_new_ix(points, npoints, ix);
     } else if (strcmp(name, "az") == 0) {
         struct tg_point points[] = { az };
         size_t npoints = sizeof(points)/sizeof(struct tg_point);

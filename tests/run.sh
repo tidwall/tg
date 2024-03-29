@@ -129,6 +129,7 @@ if [[ "$1" == "bench" ]]; then
     fi
     $CC $CFLAGS bmalloc.c ../tg.c bench.c -lm $GEOS_FLAGS
     ./a.out $@
+    OK=1
 elif [[ "$1" == "fuzz" ]]; then
     echo "FUZZING..."
     echo $CC $CFLAGS ../tg.c fuzz.c

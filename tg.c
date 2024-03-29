@@ -453,13 +453,7 @@ static double length(double x1, double y1, double x2, double y2) {
 #endif
 
 static size_t grow_cap(size_t cap, size_t init_cap) {
-    if (cap == 0) {
-        return init_cap;
-    }
-    if (cap < 1000) {
-        return cap * 2;
-    }
-    return cap * 1.25;
+    return cap == 0 ? init_cap : cap < 1000 ? cap * 2 : cap * 1.25;
 }
 
 #define print_segment(s) { \
@@ -10268,7 +10262,8 @@ static void write_string_double(struct writer *wr, double f) {
         return;
     }
     size_t dstsz = wr->count < wr->n ? wr->n - wr->count : 0;
-    wr->count += ryu_string(f, 'f', (char*)wr->dst+wr->count, dstsz);
+    char *dst = wr->dst ? (char*)wr->dst+wr->count : 0;
+    wr->count += ryu_string(f, 'f', dst, dstsz);
 }
 
 static void write_posn_geojson(struct writer *wr, struct tg_point posn) {

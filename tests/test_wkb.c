@@ -787,6 +787,20 @@ void test_wkb_various() {
     tg_geom_free(geom);
 }
 
+void test_wkb_big_shapes() {
+    struct tg_geom *geom = load_geom("bc", TG_NONE);
+    size_t n = tg_geom_wkb(geom, 0, 0);
+    uint8_t *buf = malloc(n+1);
+    assert(buf);
+    size_t n2 = tg_geom_wkb(geom, buf, n+1);
+    assert(n2 == n); 
+    struct tg_geom *geom2 = tg_parse_wkb_ix(buf, n2, TG_NONE);
+    free(buf);
+    assert(tg_geom_equals(geom, geom2));
+    tg_geom_free(geom);
+    tg_geom_free(geom2);
+}
+
 int main(int argc, char **argv) {
     do_test(test_wkb_basic_syntax);
     do_test(test_wkb_max_depth);
@@ -795,5 +809,6 @@ int main(int argc, char **argv) {
     do_chaos_test(test_wkb_chaos);
     do_test(test_wkb_with_srid);
     do_test(test_wkb_various);
+    do_test(test_wkb_big_shapes);
     return 0;
 }
