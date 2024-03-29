@@ -13,6 +13,8 @@ finish() {
     rm -fr *.profraw
     rm -fr *.dSYM
     rm -fr *.profdata
+    rm -fr *.out.wasm
+    rm -fr *.out.js
     if [[ "$OK" != "1" ]]; then
         echo "FAIL"
     fi
@@ -49,6 +51,11 @@ if [[ "$1" != "bench" ]]; then
     fi
     if [[ "$CCVERSHEAD" == *"clang"* ]]; then
         CLANGVERS="$(echo "$CCVERSHEAD" | awk '{print $4}' | awk -F'[ .]+' '{print $1}')"
+    fi
+
+    if [[ "$CC" == *"zig"* ]]; then
+        # echo Zig does not support asans
+        NOSANS=1
     fi
 
     # Use address sanitizer if possible
@@ -89,7 +96,7 @@ echo "CC: $CC"
 echo "CFLAGS: $CFLAGS"
 echo "OS: `uname`"
 echo "CPU: $cpu"
-cc2="$(readlink -f "`which $CC`")"
+cc2="$(readlink -f "`which $CC | true`" | true)"
 if [[ "$cc2" == "" ]]; then
     cc2="$CC"
 fi
@@ -152,7 +159,11 @@ else
             if [[ "$f" != $p* ]]; then continue; fi
         fi
         if [[ ! -f "tg.o" ]]; then
-            $CC $CFLAGS -Wunused-function -c $DEPS_SRCS
+            # Compile each dependency individually
+            DEPS_SRCS_ARR=($DEPS_SRCS)
+            for file in "${DEPS_SRCS_ARR[@]}"; do
+                $CC $CFLAGS -Wunused-function -c $file
+            done
             if [[ "$AMALGA" == "1" ]]; then
                 echo "AMALGA=1"
                 $CC $CFLAGS -c ../tg.c 
@@ -204,5 +215,4 @@ else
         echo "code coverage not a available"
         echo "install llvm-profdata and use clang for coverage"
     fi
-
 fi

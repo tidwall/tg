@@ -6,6 +6,8 @@ a.out
 *.profraw
 *.profdata
 *.cov.html
+*.out.js
+*.out.wasm
 libgeos
 fuzz-*
 slow-*
