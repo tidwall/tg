@@ -412,53 +412,40 @@ static bool test_case(const char *path, const char *org_json,
     return ok;
 }
 
-static bool test_relation_file(const char *name) {
+static bool test_relation_file(struct relation *rel) {
     bool ok = true;
-    char path[512];
-    snprintf(path, sizeof(path), "relations/%s", name);
-    FILE *f = fopen(path, "rb");
-    assert(f);
-    fseek(f, 0, SEEK_END);
-    size_t sz = ftell(f);
-    char *jsrc = malloc(sz+1);
+    char *jsrc = malloc(strlen(rel->data)+1);
     assert(jsrc);
-    rewind(f);
-    assert(fread(jsrc, 1, sz, f) == sz);
-    jsrc[sz] = '\0';
-    json_strip_jsonc(jsrc, sz);
+    strcpy(jsrc, rel->data);
+    json_strip_jsonc(jsrc, strlen(jsrc));
     if (!json_valid(jsrc)) {
-        fprintf(stderr, "invalid json: %s\n", path);
+        fprintf(stderr, "invalid json: %s\n", rel->name);
         abort();
     }
     struct json json = json_parse(jsrc);
     json = json_first(json);
     while (json_exists(json)) {
-        if (!test_case(name, jsrc, strlen(jsrc), json)) {
+        if (!test_case(rel->name, jsrc, strlen(jsrc), json)) {
             ok = false;
         }
         json = json_next(json);
     }
     free(jsrc);
-    fclose(f);
     return ok;
 }
 
 void test_relations_cases(void) {
     bool ok = true;
-    DIR *dp = opendir("./relations");
-    assert(dp);
-    struct dirent *ep;
-    while ((ep = readdir (dp)) != NULL) {
-        if (strstr(ep->d_name, ".json")) {
-            if (strstr(ep->d_name, only_file) || strcmp(only_file, "all") == 0)
-            {
-                if (!test_relation_file(ep->d_name)) {
-                    ok = false;
-                }
+    int nrelations = sizeof(relations) / sizeof(struct relation);
+    for (int i = 0; i < nrelations; i++) {
+        struct relation *rel = &relations[i];
+        if (strstr(rel->name, only_file) || strcmp(only_file, "all") == 0)
+        {
+            if (!test_relation_file(rel)) {
+                ok = false;
             }
         }
     }
-    closedir(dp);
     if (!ok) {
         exit(1);
     }

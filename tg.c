@@ -12789,9 +12789,9 @@ static size_t parse_wkb(const uint8_t *wkb, size_t len, size_t i, int depth,
 
     // Set the 'swap' bool which indicates that the wkb numbers need swapping
     // to match the host endianness.
-#if BYTE_ORDER == BIG_ENDIAN
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
     bool swap = wkb[i] == 1;
-#elif BYTE_ORDER == LITTLE_ENDIAN
+#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     bool swap = wkb[i] == 0;
 #else
     #error "cannot determine byte order"
@@ -12899,7 +12899,7 @@ static void write_wkb_type(struct writer *wr, const struct head *head) {
 }
 
 static void write_posn_wkb(struct writer *wr, struct tg_point posn) {
-#if BYTE_ORDER == LITTLE_ENDIAN
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     if (wr->count+16 < wr->n) {
         memcpy(wr->dst+wr->count, &posn, 16);
         wr->count += 16;
@@ -12912,7 +12912,7 @@ static void write_posn_wkb(struct writer *wr, struct tg_point posn) {
 
 static void write_posn_wkb_3(struct writer *wr, struct tg_point posn, double z)
 {
-#if BYTE_ORDER == LITTLE_ENDIAN
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     if (wr->count+24 < wr->n) {
         memcpy(wr->dst+wr->count, ((double[3]){posn.x, posn.y, z}), 24);
         wr->count += 24;
@@ -12927,7 +12927,7 @@ static void write_posn_wkb_3(struct writer *wr, struct tg_point posn, double z)
 static void write_posn_wkb_4(struct writer *wr, struct tg_point posn, 
     double z, double m)
 {
-#if BYTE_ORDER == LITTLE_ENDIAN
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     if (wr->count+32 < wr->n) {
         memcpy(wr->dst+wr->count, ((double[4]){posn.x, posn.y, z, m}), 32);
         wr->count += 32;
@@ -12944,7 +12944,7 @@ static int write_ring_points_wkb(struct writer *wr, const struct tg_ring *ring)
 {
     write_uint32le(wr, ring->npoints);
     size_t needed = ring->npoints*16;
-#if BYTE_ORDER == LITTLE_ENDIAN
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     if (wr->count+needed <= wr->n) {
         memcpy(wr->dst+wr->count, ring->points, needed);
         wr->count += needed;

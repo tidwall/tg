@@ -452,6 +452,7 @@ bool eqish(double a, double b) {
 #endif
 #pragma GCC diagnostic ignored "-Wextra"
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Woverlength-strings"
 
 size_t total_allocs = 0;
 size_t total_mem = 0;
@@ -776,4 +777,7 @@ struct tg_geom *load_geom(const char *name, enum tg_index ix) {
 struct tg_geom *load_geom_flipped(const char *name, enum tg_index ix) {
     return _load_geom(name, ix, true);
 }
+
+#include "relations.h" // Auto generated from "run.sh"
+
 #endif // TESTS_H

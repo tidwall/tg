@@ -651,7 +651,7 @@ void test_wkb_max_depth() {
     char *wkt;
     struct tg_geom *geom;
     
-    int depths[] = { 1, 100 , 1000, 1023, 1024, 1025, 2000 };
+    int depths[] = { 1, 100, 1000, 1023, 1024, 1025, 2000 };
 
     for (size_t i = 0; i < sizeof(depths)/sizeof(int); i++) {
         wkt = make_deep_wkb(depths[i]);

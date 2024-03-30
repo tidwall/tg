@@ -13,8 +13,8 @@ finish() {
     rm -fr *.profraw
     rm -fr *.dSYM
     rm -fr *.profdata
-    rm -fr *.out.wasm
-    rm -fr *.out.js
+    rm -fr *.wasm
+    rm -fr *.js
     if [[ "$OK" != "1" ]]; then
         echo "FAIL"
     fi
@@ -91,6 +91,15 @@ if [[ "$1" != "bench" ]]; then
 else
     CFLAGS=${CFLAGS:-"-O3"}
 fi
+if [[ "$CC" == "emcc" ]]; then
+    # Running emscripten
+    CFLAGS="$CFLAGS -sASYNCIFY -sALLOW_MEMORY_GROWTH -sSTACK_SIZE=5MB"
+    CFLAGS="$CFLAGS -Wno-limited-postlink-optimizations"
+    CFLAGS="$CFLAGS -Wno-unused-command-line-argument"
+    CFLAGS="$CFLAGS -Wno-pthreads-mem-growth"
+    CFLAGS="$CFLAGS -O3" # needs optimizations for test_wkb_max_depth test
+fi
+
 CC=${CC:-cc}
 echo "CC: $CC"
 echo "CFLAGS: $CFLAGS"
@@ -105,6 +114,8 @@ if [[ "$NOSANS" == "1" ]]; then
     echo "Sanitizers disabled"
 fi
 echo "TG Commit: `git rev-parse --short HEAD 2>&1 || true`"
+
+./genrelations.sh
 
 # GEOS - used for benchmarking
 if [[ "$GEOS_BENCH" == "1" ]]; then
@@ -185,6 +196,8 @@ else
         fi
         if [[ "$VALGRIND" == "1" ]]; then
             valgrind --leak-check=yes ./$f.test $@
+        elif [[ "$CC" == "emcc" ]]; then
+            node ./$f.test $@
         else
             ./$f.test $@
         fi
