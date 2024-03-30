@@ -15,6 +15,7 @@ I designed it for programs that need real-time geospatial, such as geofencing, m
 - Reads and writes [WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry), [WKB](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry), and [GeoJSON](https://en.wikipedia.org/wiki/GeoJSON).
 - Provides a purely functional [API](docs/API.md) that is reentrant and thread-safe.
 - Spatial predicates including "intersects", "covers", "touches", "equals", etc.
+- Compiles to Webassembly using Emscripten
 - [Test suite](tests/README.md) with 100% coverage using sanitizers and [Valgrind](https://valgrind.org).
 - Self-contained library that is encapsulated in the single [tg.c](tg.c) source file.
 - Pretty darn good performance. 🚀 <sup>[[benchmarks]](docs/BENCHMARKS.md)</sup>

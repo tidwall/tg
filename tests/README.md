@@ -21,6 +21,8 @@ CC=clang-17 tests/run.sh       # use alternative compiler
 CFLAGS="-O3" tests/run.sh      # use custom cflags
 NOSANS=1 tests/run.sh          # do not use sanitizers
 VALGRIND=1 tests/run.sh        # use valgrind on all tests
+CC="emcc" tests/run.sh         # Test with Emscripten (webassembly)
+CC="zig cc" tests/run.sh       # Test with the Zig C compiler
 ```
 
 ## Benchmarks
