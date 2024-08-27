@@ -801,6 +801,26 @@ void test_wkb_big_shapes() {
     tg_geom_free(geom2);
 }
 
+void test_wkb_geometrycollection() {
+    struct tg_geom *g1 = tg_parse_wkt("POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))");
+    assert(!tg_geom_error(g1));
+    struct tg_geom *g2 = tg_parse_wkt("POLYGON ((300 100, 400 400, 200 400, 100 200, 300 100))");
+    assert(!tg_geom_error(g2));
+    struct tg_geom *collection = tg_geom_new_geometrycollection((const struct tg_geom*const[]) {g1, g2}, 2);
+    assert(!tg_geom_error(collection));
+    uint8_t dst1[1024];
+    uint8_t dst2[1024];
+    size_t sz1 = tg_geom_wkb(tg_geom_geometry_at(collection, 1), dst1, sizeof(dst1));
+    struct tg_geom *g3 = tg_parse_wkb(dst1, sz1);
+    size_t sz2 = tg_geom_wkb(g3, dst2, sizeof(dst2));
+    assert(sz1 == sz2 && memcmp(dst1, dst2, sz1) == 0);
+    tg_geom_free(g1);
+    tg_geom_free(g2);
+    tg_geom_free(collection);
+    tg_geom_free(g3);
+}
+
+
 int main(int argc, char **argv) {
     do_test(test_wkb_basic_syntax);
     do_test(test_wkb_max_depth);
@@ -810,5 +830,6 @@ int main(int argc, char **argv) {
     do_test(test_wkb_with_srid);
     do_test(test_wkb_various);
     do_test(test_wkb_big_shapes);
+    do_test(test_wkb_geometrycollection);
     return 0;
 }

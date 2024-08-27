@@ -715,6 +715,24 @@ void test_wkt_various() {
     tg_geom_free(geom);
 }
 
+void test_wkt_geometrycollection() {
+    struct tg_geom *g1 = tg_parse_wkt("POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))");
+    assert(!tg_geom_error(g1));
+    struct tg_geom *g2 = tg_parse_wkt("POLYGON ((300 100, 400 400, 200 400, 100 200, 300 100))");
+    assert(!tg_geom_error(g2));
+    struct tg_geom *collection = tg_geom_new_geometrycollection((const struct tg_geom*const[]) {g1, g2}, 2);
+    assert(!tg_geom_error(collection));
+    char dst1[1024];
+    char dst2[1024];
+    tg_geom_wkt(tg_geom_geometry_at(collection, 1), dst1, sizeof(dst1));
+    struct tg_geom *g3 = tg_parse_wkt(dst1);
+    tg_geom_wkt(g3, dst2, sizeof(dst2));
+    assert(strcmp(dst1, dst2) == 0);
+    tg_geom_free(g1);
+    tg_geom_free(g2);
+    tg_geom_free(collection);
+    tg_geom_free(g3);
+}
 
 int main(int argc, char **argv) {
     seedrand();
@@ -722,5 +740,6 @@ int main(int argc, char **argv) {
     do_test(test_wkt_max_depth);
     do_chaos_test(test_wkt_chaos);
     do_test(test_wkt_various);
+    do_test(test_wkt_geometrycollection);
     return 0;
 }

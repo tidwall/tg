@@ -10600,7 +10600,9 @@ static void write_geom_geometrycollection_geojson(const struct tg_geom *geom,
     write_char(wr, '}');
 }
 
-static void write_geom_geojson(const struct tg_geom *geom, struct writer *wr) {
+static void write_base_geom_geojson(const struct tg_geom *geom,
+    struct writer *wr)
+{
     if ((geom->head.flags&IS_ERROR) == IS_ERROR) {
         // sigh, just write us an empty point ...
         write_string(wr, "{\"type\":\"Point\",\"coordinates\":[]}");
@@ -10775,6 +10777,26 @@ static void write_poly_geojson(const struct tg_poly *poly, struct writer *wr) {
     }
 }
 
+static void write_geom_geojson(const struct tg_geom *geom, struct writer *wr) {
+    switch (geom->head.base) {
+    case BASE_GEOM:
+        write_base_geom_geojson(geom, wr);
+        break;
+    case BASE_POINT:
+        write_point_geojson((struct boxed_point*)geom, wr);
+        break;
+    case BASE_LINE:
+        write_line_geojson((struct tg_line*)geom, wr);
+        break;
+    case BASE_RING:
+        write_ring_geojson((struct tg_ring*)geom, wr);
+        break;
+    case BASE_POLY:
+        write_poly_geojson((struct tg_poly*)geom, wr);
+        break;
+    }
+}
+
 /// Writes a GeoJSON representation of a geometry.
 ///
 /// The content is stored as a C string in the buffer pointed to by dst.
@@ -10804,23 +10826,7 @@ static void write_poly_geojson(const struct tg_poly *poly, struct writer *wr) {
 size_t tg_geom_geojson(const struct tg_geom *geom, char *dst, size_t n) {
     if (!geom) return 0;
     struct writer wr = { .dst = (uint8_t*)dst, .n = n };
-    switch (geom->head.base) {
-    case BASE_GEOM:
-        write_geom_geojson(geom, &wr);
-        break;
-    case BASE_POINT:
-        write_point_geojson((struct boxed_point*)geom, &wr);
-        break;
-    case BASE_LINE:
-        write_line_geojson((struct tg_line*)geom, &wr);
-        break;
-    case BASE_RING:
-        write_ring_geojson((struct tg_ring*)geom, &wr);
-        break;
-    case BASE_POLY:
-        write_poly_geojson((struct tg_poly*)geom, &wr);
-        break;
-    }
+    write_geom_geojson(geom, &wr);
     write_nullterm(&wr);
     return wr.count;
 }
@@ -12129,7 +12135,7 @@ static void write_geom_geometrycollection_wkt(const struct tg_geom *geom,
     write_char(wr, ')');
 }
 
-static void write_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
+static void write_base_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
     switch (geom->head.type) {
     case TG_POINT:
         write_geom_point_wkt(geom, wr);
@@ -12151,6 +12157,26 @@ static void write_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
         break;
     case TG_GEOMETRYCOLLECTION:
         write_geom_geometrycollection_wkt(geom, wr);
+        break;
+    }
+}
+
+static void write_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
+    switch (geom->head.base) {
+    case BASE_GEOM:
+        write_base_geom_wkt(geom, wr);
+        break;
+    case BASE_POINT:
+        write_point_wkt((struct boxed_point*)geom, wr);
+        break;
+    case BASE_LINE:
+        write_line_wkt((struct tg_line*)geom, wr);
+        break;
+    case BASE_RING:
+        write_ring_wkt((struct tg_ring*)geom, wr);
+        break;
+    case BASE_POLY:
+        write_poly_wkt((struct tg_poly*)geom, wr);
         break;
     }
 }
@@ -12184,23 +12210,7 @@ static void write_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
 size_t tg_geom_wkt(const struct tg_geom *geom, char *dst, size_t n) {
     if (!geom) return 0;
     struct writer wr = { .dst = (uint8_t*)dst, .n = n };
-    switch (geom->head.base) {
-    case BASE_GEOM:
-        write_geom_wkt(geom, &wr);
-        break;
-    case BASE_POINT:
-        write_point_wkt((struct boxed_point*)geom, &wr);
-        break;
-    case BASE_LINE:
-        write_line_wkt((struct tg_line*)geom, &wr);
-        break;
-    case BASE_RING:
-        write_ring_wkt((struct tg_ring*)geom, &wr);
-        break;
-    case BASE_POLY:
-        write_poly_wkt((struct tg_poly*)geom, &wr);
-        break;
-    }
+    write_geom_wkt(geom, &wr);
     write_nullterm(&wr);
     return wr.count;
 }
@@ -13284,7 +13294,7 @@ static void write_geom_geometrycollection_wkb(const struct tg_geom *geom,
     }
 }
 
-static void write_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
+static void write_base_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
     switch (geom->head.type) {
     case TG_POINT:
         write_geom_point_wkb(geom, wr);
@@ -13306,6 +13316,26 @@ static void write_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
         break;
     case TG_GEOMETRYCOLLECTION:
         write_geom_geometrycollection_wkb(geom, wr);
+        break;
+    }
+}
+
+static void write_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
+    switch (geom->head.base) {
+    case BASE_GEOM:
+        write_base_geom_wkb(geom, wr);
+        break;
+    case BASE_POINT:
+        write_point_wkb((struct boxed_point*)geom, wr);
+        break;
+    case BASE_LINE:
+        write_line_wkb((struct tg_line*)geom, wr);
+        break;
+    case BASE_RING:
+        write_ring_wkb((struct tg_ring*)geom, wr);
+        break;
+    case BASE_POLY:
+        write_poly_wkb((struct tg_poly*)geom, wr);
         break;
     }
 }
@@ -13337,23 +13367,7 @@ static void write_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
 size_t tg_geom_wkb(const struct tg_geom *geom, uint8_t *dst, size_t n) {
     if (!geom) return 0;
     struct writer wr = { .dst = dst, .n = n };
-    switch (geom->head.base) {
-    case BASE_GEOM:
-        write_geom_wkb(geom, &wr);
-        break;
-    case BASE_POINT:
-        write_point_wkb((struct boxed_point*)geom, &wr);
-        break;
-    case BASE_LINE:
-        write_line_wkb((struct tg_line*)geom, &wr);
-        break;
-    case BASE_RING:
-        write_ring_wkb((struct tg_ring*)geom, &wr);
-        break;
-    case BASE_POLY:
-        write_poly_wkb((struct tg_poly*)geom, &wr);
-        break;
-    }
+    write_geom_wkb(geom, &wr);
     return wr.count;
 }
 
