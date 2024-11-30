@@ -713,6 +713,13 @@ void test_wkt_various() {
     assert(tg_geom_error(geom));
     assert(strcmp(tg_geom_error(geom), "ParseError: missing type") == 0);
     tg_geom_free(geom);
+
+    geom = tg_parse_geojson("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[10,20]},\"properties\":{\"a\":\"b\"}}");
+    char output[100];
+    size_t len = tg_geom_wkt(geom, output, sizeof(output));
+    assert(strcmp(output, "POINT(10 20)") == 0);
+    tg_geom_free(geom);
+
 }
 
 void test_wkt_geometrycollection() {
