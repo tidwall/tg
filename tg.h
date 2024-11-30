@@ -156,6 +156,8 @@ struct tg_geom *tg_parse_hex(const char *hex);
 struct tg_geom *tg_parse_hexn(const char *hex, size_t len);
 struct tg_geom *tg_parse_hex_ix(const char *hex, enum tg_index ix);
 struct tg_geom *tg_parse_hexn_ix(const char *hex, size_t len, enum tg_index ix);
+struct tg_geom *tg_parse(const void *data, size_t len);
+struct tg_geom *tg_parse_ix(const void *data, size_t len, enum tg_index ix);
 const char *tg_geom_error(const struct tg_geom *geom);
 /// @}
 

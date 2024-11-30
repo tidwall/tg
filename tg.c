@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
 #include "tg.h"
 
 /******************************************************************************
@@ -14278,4 +14279,68 @@ void tg_geom_search(const struct tg_geom *geom, struct tg_rect rect,
 /// Calculate the length of a line.
 double tg_line_length(const struct tg_line *line) {
     return tg_ring_perimeter((struct tg_ring*)line);
+}
+
+/// Parse data into a geometry by auto detecting the input type.
+/// The input data can be WKB, WKT, Hex, or GeoJSON.
+/// @param data Data
+/// @param len Length of data
+/// @returns A geometry or an error. Use tg_geom_error() after parsing to check
+/// for errors.
+/// @see tg_parse_ix()
+/// @see tg_geom_error()
+/// @see GeometryParsing
+struct tg_geom *tg_parse(const void *data, size_t len) {
+    return tg_parse_ix(data, len, 0);
+}
+
+/// Parse data using provided indexing option.
+/// @param data Data
+/// @param len Length of data
+/// @param ix Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
+/// @returns A geometry or an error. Use tg_geom_error() after parsing to check
+/// for errors.
+/// @see tg_parse()
+struct tg_geom *tg_parse_ix(const void *data, size_t len, enum tg_index ix) {
+    if (!data || len == 0) {
+        return 0;
+    }
+    const char *src = data;
+    if (src[0] == '{') {
+        goto geojson;
+    }
+    if (isspace(src[0])) {
+        for (size_t i = 1; i < len; i++) {
+            if (isspace(src[i])) {
+                continue;
+            } else if (src[i] == '{') {
+                goto geojson;
+            } else {
+                break;
+            }
+        }
+        goto wkt;
+    }
+    if (isalpha(src[0]) || isxdigit(src[0])) {
+        bool ishex = true;
+        for (size_t i = 0; i < len && i < 16; i++) {
+            if (!isxdigit(src[i])) {
+                ishex = false;
+                break;
+            }
+        }
+        if (ishex) {
+            goto hex;
+        }
+        goto wkt;
+    }
+    goto wkb;
+geojson:
+    return tg_parse_geojsonn_ix(src, len, ix);
+wkt:
+    return tg_parse_wktn_ix(src, len, ix);
+hex:
+    return tg_parse_hexn_ix(src, len, ix);
+wkb:
+    return tg_parse_wkb_ix((uint8_t*)src, len, ix);
 }
