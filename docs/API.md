@@ -223,6 +223,8 @@ Functions for parsing geometries from external data representations. It's recomm
 - [tg_parse_hexn()](#group___geometry_parsing_1ga2beb47ee201ddbd1a9a7a43c938c4396)
 - [tg_parse_hex_ix()](#group___geometry_parsing_1ga8718e134723418426e5df2b13acdf0c1)
 - [tg_parse_hexn_ix()](#group___geometry_parsing_1ga3d1f9eb85ff97812fed7cf7bf9e14bd4)
+- [tg_parse()](#group___geometry_parsing_1gaa9e5850bb2cc4eb442c227cd5ac738a1)
+- [tg_parse_ix()](#group___geometry_parsing_1gae0bfc62deb68979a46ed62facfee1280)
 - [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e)
 
 
@@ -2165,6 +2167,59 @@ Parse hex encoded Well-known binary (WKB) using provided indexing option.
 - [tg_parse_hex()](#group___geometry_parsing_1ga0fc4fd8cb076a78c44df07c517281f67)
 - [tg_parse_hex_ix()](#group___geometry_parsing_1ga8718e134723418426e5df2b13acdf0c1)
 - [Geometry parsing](#group___geometry_parsing)
+
+
+
+<a name='group___geometry_parsing_1gaa9e5850bb2cc4eb442c227cd5ac738a1'></a>
+## tg_parse()
+```c
+struct tg_geom *tg_parse(const void *data, size_t len);
+```
+Parse data into a geometry by auto detecting the input type. The input data can be WKB, WKT, Hex, or GeoJSON. 
+
+**Parameters**
+
+- **data**: Data
+- **len**: Length of data
+
+
+
+**Return**
+
+- A geometry or an error. Use [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e) after parsing to check for errors.
+
+
+**See also**
+
+- [tg_parse_ix()](#group___geometry_parsing_1gae0bfc62deb68979a46ed62facfee1280)
+- [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e)
+- [Geometry parsing](#group___geometry_parsing)
+
+
+
+<a name='group___geometry_parsing_1gae0bfc62deb68979a46ed62facfee1280'></a>
+## tg_parse_ix()
+```c
+struct tg_geom *tg_parse_ix(const void *data, size_t len, enum tg_index ix);
+```
+Parse data using provided indexing option. 
+
+**Parameters**
+
+- **data**: Data
+- **len**: Length of data
+- **ix**: Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
+
+
+
+**Return**
+
+- A geometry or an error. Use [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e) after parsing to check for errors.
+
+
+**See also**
+
+- [tg_parse()](#group___geometry_parsing_1gaa9e5850bb2cc4eb442c227cd5ac738a1)
 
 
 
