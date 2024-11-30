@@ -71,18 +71,15 @@ if [[ "$1" != "bench" ]]; then
         CFLAGS="$CFLAGS -fno-inline"
         CFLAGS="$CFLAGS -pedantic"
         WITHSANS=1
-
-        if [[ "$(which llvm-cov-$CLANGVERS)" != "" && "$(which llvm-profdata-$CLANGVERS)" != "" ]]; then
-            LLVM_COV="llvm-cov-$CLANGVERS"
-            LLVM_PROFDATA="llvm-profdata-$CLANGVERS"
-        else
-            LLVM_COV="llvm-cov"
-            LLVM_PROFDATA="llvm-profdata"
+        INSTALLDIR="$($CC --version | grep InstalledDir | cut -d " " -f 2)"
+        if [[ "$INSTALLDIR" != "" ]]; then
+            LLVM_COV="$INSTALLDIR/llvm-cov"
+            LLVM_PROFDATA="$INSTALLDIR/llvm-profdata"
         fi
-
         if [[ "$(which $LLVM_PROFDATA)" != "" && "$(which $LLVM_COV)" != "" ]]; then
             COV_VERS="$($LLVM_COV --version | awk '{print $4}' | awk -F'[ .]+' '{print $1}')"
-            if [[ "$COV_VERS" -gt "15" ]]; then
+            echo $COV_VERS
+            if [[ "$COV_VERS" -gt "14" ]]; then
                 WITHCOV=1
             fi
         fi
