@@ -190,6 +190,7 @@ Build and run the example:
 ```sh
 $ cc -I. examples/intersects.c tg.c
 $ ./a.out 'POINT(15 15)' 'POLYGON((10 10,20 10,20 20,10 20,10 10))'
+yes
 ```
 
 ## License
