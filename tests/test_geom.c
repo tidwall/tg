@@ -981,6 +981,21 @@ void test_geom_chaos(void) {
 
 }
 
+void test_geom_error(void) {
+    struct tg_geom *geom;
+    geom = tg_geom_new_error(0);
+    assert(strcmp(tg_geom_error(geom), "no memory") == 0);
+    tg_geom_free(geom);
+    
+    geom = tg_geom_new_error("");
+    assert(strcmp(tg_geom_error(geom), "") == 0);
+    tg_geom_free(geom);
+
+    geom = tg_geom_new_error("hello");
+    assert(strcmp(tg_geom_error(geom), "hello") == 0);
+    tg_geom_free(geom);
+
+}
 
 int main(int argc, char **argv) {
     do_test(test_geom_point);
@@ -996,5 +1011,6 @@ int main(int argc, char **argv) {
     do_test(test_geom_various);
     do_test(test_geom_copy);
     do_chaos_test(test_geom_chaos);
+    do_test(test_geom_error);
     return 0;
 }

@@ -142,6 +142,7 @@ Functions for creating and freeing geometries.
 - [tg_geom_new_multilinestring()](#group___geometry_constructors_1gaccfd80de48f1e5c7de38cbf515d3bf9f)
 - [tg_geom_new_multipolygon()](#group___geometry_constructors_1gad57b01099788e21a5103cd8293f4e364)
 - [tg_geom_new_geometrycollection()](#group___geometry_constructors_1ga39569ef55606b8d54ed7cf14a4382bdd)
+- [tg_geom_new_error()](#group___geometry_constructors_1ga53823d8d5f2f77ba2ac14b4f8a77700c)
 - [tg_geom_clone()](#group___geometry_constructors_1ga76f55846aa97188b1840b9ad07dae000)
 - [tg_geom_copy()](#group___geometry_constructors_1ga389a890d60908d3e2b448a0e2b3d558e)
 - [tg_geom_free()](#group___geometry_constructors_1gaf6f400f624b9f3e9052ac26ab17d72ae)
@@ -869,6 +870,14 @@ Creates a GeometryCollection geometry.
 
 - [Geometry constructors](#group___geometry_constructors)
 
+
+
+<a name='group___geometry_constructors_1ga53823d8d5f2f77ba2ac14b4f8a77700c'></a>
+## tg_geom_new_error()
+```c
+struct tg_geom *tg_geom_new_error(const char *errmsg);
+```
+Utility for returning an error message wrapped in a geometry. This operation does not return a real geometry, only an error message, which may be useful for generating custom errors from operations outside of the TG library. 
 
 
 <a name='group___geometry_constructors_1ga76f55846aa97188b1840b9ad07dae000'></a>

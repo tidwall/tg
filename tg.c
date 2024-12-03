@@ -14344,3 +14344,11 @@ hex:
 wkb:
     return tg_parse_wkb_ix((uint8_t*)src, len, ix);
 }
+
+/// Utility for returning an error message wrapped in a geometry.
+/// This operation does not return a real geometry, only an error message,
+/// which may be useful for generating custom errors from operations 
+/// outside of the TG library.
+struct tg_geom *tg_geom_new_error(const char *error) {
+    return error?make_parse_error("%s", error):0;
+}
