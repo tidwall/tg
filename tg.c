@@ -50,27 +50,36 @@ enum flags {
     IS_UNLOCATED   = 1<<7,  // GeoJSON. 'Feature' with 'geometry'=null
 };
 
+// Reference counting in TG defaults to zero. This means that a zero value for
+// an object with an rc_t field holds a single reference. Only when the rc_t
+// falls below zero will the owning object be freed.
+//
+// rc_add adds a new reference
+// rc_sub removes a reference. Returns false if the owning object can be freed.
+//
 // Optionally use non-atomic reference counting when TG_NOATOMICS is defined.
 #ifdef TG_NOATOMICS
 typedef int rc_t;
-static int rc_sub(rc_t *rc) {
+static bool rc_sub(rc_t *rc) {
     int fetch = *rc;
     (*rc)--;
-    return fetch;
+    return fetch > 0;
 }
-static int rc_add(rc_t *rc) {
-    int fetch = *rc;
+static void rc_add(rc_t *rc) {
     (*rc)++;
-    return fetch;
 }
 #else
 #include <stdatomic.h>
 typedef atomic_int rc_t;
-static int rc_sub(rc_t *rc) {
-    return atomic_fetch_sub(rc, 1);
+static bool rc_sub(rc_t *rc) {
+    if (atomic_fetch_sub_explicit(rc, 1, __ATOMIC_RELEASE) > 0) {
+        return true;
+    }
+    atomic_thread_fence(__ATOMIC_ACQUIRE);
+    return false;
 }
-static int rc_add(rc_t *rc) {
-    return atomic_fetch_add(rc, 1);
+static void rc_add(rc_t *rc) {
+    atomic_fetch_add_explicit(rc, 1, __ATOMIC_RELAXED);
 }
 #endif
 
@@ -1827,7 +1836,7 @@ struct tg_ring *tg_ring_new_ix(const struct tg_point *points, int npoints,
 /// @see RingFuncs
 void tg_ring_free(struct tg_ring *ring) {
     if (!ring) return;
-    if (rc_sub(&ring->head.rc) > 0) return;
+    if (rc_sub(&ring->head.rc)) return;
     if (ring->ystripes) tg_free(ring->ystripes);
     tg_free(ring);
 }
@@ -3343,7 +3352,7 @@ void tg_poly_free(struct tg_poly *poly) {
         tg_ring_free((struct tg_ring*)poly);
         return;
     }
-    if (rc_sub(&poly->head.rc) > 0) return;
+    if (rc_sub(&poly->head.rc)) return;
     if (poly->exterior) tg_ring_free(poly->exterior);
     if (poly->holes) {
         for (int i = 0; i < poly->nholes; i++) {
@@ -3859,7 +3868,7 @@ struct tg_geom *tg_geom_new_point(struct tg_point point) {
 }
 
 static void boxed_point_free(struct boxed_point *point) {
-    if (rc_sub(&point->head.rc) > 0) return;
+    if (rc_sub(&point->head.rc)) return;
     tg_free(point);
 }
 
@@ -4616,7 +4625,7 @@ struct tg_geom *tg_geom_clone(const struct tg_geom *geom) {
 }
 
 static void geom_free(struct tg_geom *geom) {
-    if (rc_sub(&geom->head.rc) > 0) return;
+    if (rc_sub(&geom->head.rc)) return;
     switch (geom->head.type) {
     case TG_POINT:
         break;
