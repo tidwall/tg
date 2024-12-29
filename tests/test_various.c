@@ -198,11 +198,41 @@ void test_various_imported_tests() {
     // assert(tg_geom_intersects(b, a) == true);
 }
 
+void tg_geom_setnoheap(struct tg_geom *geom);
+
+void test_various_noheap(void) {
+    struct tg_geom *g1 = tg_parse("POINT(1 1)", 10);
+    struct tg_geom *g2 = tg_geom_clone(g1);
+
+
+    size_t size = tg_geom_memsize(g1);
+    struct tg_geom *g3 = alloca(size);
+    memcpy(g3, g1, size);
+    tg_geom_setnoheap(g3);
+    struct tg_geom *g4 = tg_geom_clone(g3);
+
+
+    assert(tg_geom_equals(g1, g2));
+    assert(tg_geom_equals(g2, g3));
+    assert(tg_geom_equals(g3, g4));
+
+    assert(g1 == g2);
+    assert(g2 != g3);
+    assert(g3 != g4);
+
+    tg_geom_free(g4);
+    tg_geom_free(g3);
+    tg_geom_free(g2);
+    tg_geom_free(g1);
+    
+}
+
 int main(int argc, char **argv) {
     do_test(test_various_imported_tests);
     do_test(test_various_issue_14);
     do_test(test_various_issue_369);
     do_test(test_various_unit_tests);
+    do_test(test_various_noheap);
     return 0;
 }
 

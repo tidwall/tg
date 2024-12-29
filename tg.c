@@ -85,8 +85,9 @@ static void rc_add(rc_t *rc) {
 
 struct head { 
     rc_t rc;
-    enum base base:8;
-    enum tg_geom_type type:8;
+    bool noheap;
+    enum base base:4;
+    enum tg_geom_type type:4;
     enum flags flags:8;
 };
 
@@ -1835,8 +1836,7 @@ struct tg_ring *tg_ring_new_ix(const struct tg_point *points, int npoints,
 /// @param ring Input ring
 /// @see RingFuncs
 void tg_ring_free(struct tg_ring *ring) {
-    if (!ring) return;
-    if (rc_sub(&ring->head.rc)) return;
+    if (!ring || ring->head.noheap || rc_sub(&ring->head.rc)) return;
     if (ring->ystripes) tg_free(ring->ystripes);
     tg_free(ring);
 }
@@ -1859,7 +1859,9 @@ static size_t ring_alloc_size(const struct tg_ring *ring) {
 /// reference counter.
 /// @see RingFuncs
 struct tg_ring *tg_ring_clone(const struct tg_ring *ring) {
-    if (!ring) return NULL;
+    if (!ring || ring->head.noheap) {
+        return tg_ring_copy(ring);
+    }
     struct tg_ring *ring_mut = (struct tg_ring*)ring;
     rc_add(&ring_mut->head.rc);
     return ring_mut;
@@ -3352,7 +3354,7 @@ void tg_poly_free(struct tg_poly *poly) {
         tg_ring_free((struct tg_ring*)poly);
         return;
     }
-    if (rc_sub(&poly->head.rc)) return;
+    if (poly->head.noheap || rc_sub(&poly->head.rc)) return;
     if (poly->exterior) tg_ring_free(poly->exterior);
     if (poly->holes) {
         for (int i = 0; i < poly->nholes; i++) {
@@ -3371,12 +3373,13 @@ void tg_poly_free(struct tg_poly *poly) {
 /// reference counter.
 /// @see PolyFuncs
 struct tg_poly *tg_poly_clone(const struct tg_poly *poly) {
-    if (!poly) return NULL;
+    if (!poly || poly->head.noheap) {
+        return tg_poly_copy(poly);
+    }
     struct tg_poly *poly_mut = (struct tg_poly*)poly;
     rc_add(&poly_mut->head.rc);
     return poly_mut;
 }
-
 
 /// Returns the exterior ring.
 /// @param poly Input polygon
@@ -3868,7 +3871,7 @@ struct tg_geom *tg_geom_new_point(struct tg_point point) {
 }
 
 static void boxed_point_free(struct boxed_point *point) {
-    if (rc_sub(&point->head.rc)) return;
+    if (point->head.noheap || rc_sub(&point->head.rc)) return;
     tg_free(point);
 }
 
@@ -4618,14 +4621,16 @@ struct tg_geom *tg_geom_new_multipolygon_zm(
 /// reference counter.
 /// @see GeometryConstructors
 struct tg_geom *tg_geom_clone(const struct tg_geom *geom) {
-    if (!geom) return NULL;
+    if (!geom || geom->head.noheap) {
+        return tg_geom_copy(geom);
+    }
     struct tg_geom *geom_mut = (struct tg_geom*)geom;
     rc_add(&geom_mut->head.rc);
     return geom_mut;
 }
 
 static void geom_free(struct tg_geom *geom) {
-    if (rc_sub(&geom->head.rc)) return;
+    if (geom->head.noheap || rc_sub(&geom->head.rc)) return;
     switch (geom->head.type) {
     case TG_POINT:
         break;
@@ -14002,6 +14007,7 @@ struct tg_ring *tg_ring_copy(const struct tg_ring *ring) {
     }
     memcpy(ring2, ring, size);
     ring2->head.rc = 0;
+    ring2->head.noheap = 0;
     if (ring->ystripes) {
         ring2->ystripes = tg_malloc(ring->ystripes->memsz);
         if (!ring2->ystripes) {
@@ -14045,6 +14051,7 @@ struct tg_poly *tg_poly_copy(const struct tg_poly *poly) {
     memset(poly2, 0, sizeof(struct tg_poly));
     memcpy(&poly2->head, &poly->head, sizeof(struct head));
     poly2->head.rc = 0;
+    poly2->head.noheap = 0;
     poly2->exterior = tg_ring_copy(poly->exterior);
     if (!poly2->exterior) {
         goto fail;
@@ -14077,6 +14084,7 @@ static struct tg_geom *geom_copy(const struct tg_geom *geom) {
     memset(geom2, 0, sizeof(struct tg_geom));
     memcpy(&geom2->head, &geom->head, sizeof(struct head));
     geom2->head.rc = 0;
+    geom2->head.noheap = 0;
     switch (geom->head.type) {
     case TG_POINT:
         geom2->point.x = geom->point.x;
@@ -14173,6 +14181,7 @@ static struct boxed_point *boxed_point_copy(const struct boxed_point *point) {
     }
     memcpy(point2, point, sizeof(struct boxed_point));
     point2->head.rc = 0;
+    point2->head.noheap = 0;
     return point2;
 }
 
@@ -14360,4 +14369,11 @@ wkb:
 /// outside of the TG library.
 struct tg_geom *tg_geom_new_error(const char *error) {
     return error?make_parse_error("%s", error):0;
+}
+
+/// Set the noheap property to true and the reference counter to zero.
+/// _undocumented_
+void tg_geom_setnoheap(struct tg_geom *geom) {
+    geom->head.rc = 0;
+    geom->head.noheap = 1;
 }
