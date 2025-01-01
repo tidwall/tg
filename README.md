@@ -12,7 +12,7 @@ I designed it for programs that need real-time geospatial, such as geofencing, m
 
 - Implements OGC [Simple Features](https://en.wikipedia.org/wiki/Simple_Features) including Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, GeometryCollection. 
 - Optimized [polygon indexing](docs/POLYGON_INDEXING.md) that introduces two new structures.
-- Reads and writes [WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry), [WKB](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry), and [GeoJSON](https://en.wikipedia.org/wiki/GeoJSON).
+- Reads and writes [GeoJSON](https://en.wikipedia.org/wiki/GeoJSON), [WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry), [WKB](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry), and [GeoBIN](docs/GEOBIN.md). 
 - Provides a purely functional [API](docs/API.md) that is reentrant and thread-safe.
 - Spatial predicates including "intersects", "covers", "touches", "equals", etc.
 - Compiles to Webassembly using Emscripten
@@ -30,8 +30,7 @@ It's a non-goal for TG to be a full GIS library. Consider [GEOS](https://libgeos
 
 TG uses [entirely new](docs/POLYGON_INDEXING.md) indexing structures that speed up [geometry predicates](docs/API.md#geometry-predicates). It can index more than 10GB per second of point data on modern hardware, while using less than 7% of additional memory, and can perform over 10 million point-in-polygon operations per second, even when using large polygons with over 10K points.
 
-The following benchmark provides an example of the point-in-polygon performance
-of TG when using a large polygon. In this case of Brazil, which has 39K points.
+The following benchmark provides an example of the parsing, indexing, and point-in-polygon speed of TG vs GEOS when using a large polygon. In this case Brazil, which has 39K points.
 
 <pre>
 <b>Brazil              ops/sec    ns/op  points  hits       built      bytes</b>
@@ -42,7 +41,7 @@ geos/none            29,708    33661   39914  3257   135.18 µs    958,104
 geos/prepared     7,885,512      127   39914  3257  2059.94 µs  3,055,496
 </pre>
 
-- "built": Column showing how much time the polygon and index took to construct.
+- "built": Column showing how much time it took to construct the polygon and index.
 - "bytes": Column showing the final in-memory size of the polygon and index.
 - "none": No indexing was used.
 - "natural": Using TG [Natural](docs/POLYGON_INDEXING.md#natural) indexing

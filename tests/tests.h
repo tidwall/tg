@@ -658,6 +658,34 @@ char *read_file(const char *path, size_t *size) {
     return data;
 }
 
+void cmpfullrect(int dims, double min[4], double max[4], int dims2, double min2[4], double max2[4]) {
+    if (dims != dims2) {
+        printf("expected\n\tdims( %d )\ngot\n\tdims( %d )\n", dims, dims2);
+        assert(0);
+    }
+    for (int i = 0; i < dims; i++) {
+        if (min[i] != min2[i] || max[i] != max2[i]) {
+            printf("expected\n\tmin( ");
+            for (int i = 0; i < dims; i++) {
+                printf("%.0f ", min2[i]);
+            }
+            printf(") max( ");
+            for (int i = 0; i < dims; i++) {
+                printf("%.0f ", max2[i]);
+            }
+            printf(")\ngot\n\tmin( ");
+            for (int i = 0; i < dims; i++) {
+                printf("%.0f ", min[i]);
+            }
+            printf(") max( ");
+            for (int i = 0; i < dims; i++) {
+                printf("%.0f ", max[i]);
+            }
+            printf(")\n");
+            assert(0);
+        }
+    }
+}
 
 static double *make_polygon(int n, double x, double y, double r, double c, double s) {
     s = s < 0.0 ? 0.0 : s > 1.0 ? 1.0 : s;

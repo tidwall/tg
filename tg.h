@@ -122,6 +122,7 @@ size_t tg_geom_memsize(const struct tg_geom *geom);
 void tg_geom_search(const struct tg_geom *geom, struct tg_rect rect,
     bool (*iter)(const struct tg_geom *geom, int index, void *udata),
     void *udata);
+int tg_geom_fullrect(const struct tg_geom *geom, double min[4], double max[4]);
 /// @}
 
 /// @defgroup GeometryPredicates Geometry predicates
@@ -157,9 +158,13 @@ struct tg_geom *tg_parse_hex(const char *hex);
 struct tg_geom *tg_parse_hexn(const char *hex, size_t len);
 struct tg_geom *tg_parse_hex_ix(const char *hex, enum tg_index ix);
 struct tg_geom *tg_parse_hexn_ix(const char *hex, size_t len, enum tg_index ix);
+struct tg_geom *tg_parse_geobin(const uint8_t *geobin, size_t len);
+struct tg_geom *tg_parse_geobin_ix(const uint8_t *geobin, size_t len,enum tg_index ix);
 struct tg_geom *tg_parse(const void *data, size_t len);
 struct tg_geom *tg_parse_ix(const void *data, size_t len, enum tg_index ix);
 const char *tg_geom_error(const struct tg_geom *geom);
+int tg_geobin_fullrect(const uint8_t *geobin, size_t len, double min[4], double max[4]);
+
 /// @}
 
 /// @defgroup GeometryWriting Geometry writing
@@ -169,6 +174,7 @@ size_t tg_geom_geojson(const struct tg_geom *geom, char *dst, size_t n);
 size_t tg_geom_wkt(const struct tg_geom *geom, char *dst, size_t n);
 size_t tg_geom_wkb(const struct tg_geom *geom, uint8_t *dst, size_t n);
 size_t tg_geom_hex(const struct tg_geom *geom, char *dst, size_t n);
+size_t tg_geom_geobin(const struct tg_geom *geom, uint8_t *dst, size_t n);
 /// @}
 
 /// @defgroup GeometryConstructorsEx Geometry with alternative dimensions

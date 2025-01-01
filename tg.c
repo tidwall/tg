@@ -8298,7 +8298,7 @@ static void write_doublele(struct writer *wr, double x) {
 }
 
 static void write_string(struct writer *wr, const char *str) {
-    char *p = (char*)str;
+    const char *p = str;
     while (*p) write_char(wr, *(p++));
 }
 
@@ -11105,15 +11105,6 @@ static int parse_wkt_posns(enum base base, int dims, int depth, const char *wkt,
         if (xparens) {
             if (i == len || wkt[i] != '(') {
                 // err: expected '('
-                // if (wkt[i] == 'e' || wkt[i] == 'E') {
-                //     (wkt[i+1] == 'm' || wkt[i+1] == 'M')
-                //     (wkt[i+2] == 'p' || wkt[i+2] == 'P')
-                //     (wkt[i+3] == 't' || wkt[i+3] == 'T')
-                //     (wkt[i+4] == 'y' || wkt[i+4] == 'Y')
-                //     if (i+5
-                //     // EMPTY ?
-                // }
-                // printf(">>> %c\n", wkt[i]);
                 *err = wkt_invalid_err("expected '('");
                 return -1;
             }
@@ -13439,6 +13430,9 @@ size_t tg_geom_hex(const struct tg_geom *geom, char *dst, size_t n) {
     return count*2;
 }
 
+static size_t parse_geobin(const uint8_t *geobin, size_t len, size_t i, 
+    size_t depth, enum tg_index ix, struct tg_geom **g);
+
 static struct tg_geom *parse_hex(const char *hex, size_t len, enum tg_index ix)
 {
     const uint8_t _ = 0;
@@ -13468,7 +13462,14 @@ static struct tg_geom *parse_hex(const char *hex, size_t len, enum tg_index ix)
         j++;
     }
     struct tg_geom *geom;
-    parse_wkb(dst, len/2, 0, 0, ix, &geom);
+    len /= 2;
+    size_t n;
+    if (len > 0 && dst[0] >= 0x2 && dst[0] <= 0x4) {
+        n = parse_geobin(dst, len, 0, 0, ix, &geom);
+    } else {
+        n = parse_wkb(dst, len, 0, 0, ix, &geom);
+    }
+    (void)n;
     if (must_free) tg_free(dst);
     return geom;
 invalid:
@@ -13476,7 +13477,8 @@ invalid:
     return make_parse_error(wkb_invalid_err());
 }
 
-/// Parse hex encoded Well-known binary (WKB) using provided indexing option.
+/// Parse hex encoded Well-known binary (WKB) or GeoBIN using provided indexing
+/// option.
 /// @param hex Hex data
 /// @param len Length of data
 /// @param ix Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
@@ -13498,7 +13500,8 @@ struct tg_geom *tg_parse_hexn_ix(const char *hex, size_t len,
     return geom;
 }
 
-/// Parse hex encoded Well-known binary (WKB) using provided indexing option.
+/// Parse hex encoded Well-known binary (WKB) or GeoBIN using provided indexing
+/// option.
 /// @param hex Hex string. Must be null-terminated
 /// @param ix Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
 /// @returns A geometry or an error. Use tg_geom_error() after parsing to check
@@ -13510,7 +13513,8 @@ struct tg_geom *tg_parse_hex_ix(const char *hex, enum tg_index ix) {
     return tg_parse_hexn_ix(hex, hex?strlen(hex):0, ix);
 }
 
-/// Parse hex encoded Well-known binary (WKB) with an included data length.
+/// Parse hex encoded Well-known binary (WKB) or GeoBIN with an included data 
+/// length.
 /// @param hex Hex data
 /// @param len Length of data
 /// @returns A geometry or an error. Use tg_geom_error() after parsing to check
@@ -13521,7 +13525,7 @@ struct tg_geom *tg_parse_hexn(const char *hex, size_t len) {
     return tg_parse_hexn_ix(hex, len, TG_DEFAULT);
 }
 
-/// Parse hex encoded Well-known binary (WKB).
+/// Parse hex encoded Well-known binary (WKB) or GeoBIN.
 /// @param hex A hex string. Must be null-terminated
 /// @returns A geometry or an error. Use tg_geom_error() after parsing to check
 /// for errors. 
@@ -14352,7 +14356,10 @@ struct tg_geom *tg_parse_ix(const void *data, size_t len, enum tg_index ix) {
         }
         goto wkt;
     }
-    goto wkb;
+    if (src[0] == 0x00 || src[0] == 0x01) {
+        goto wkb;
+    }
+    goto geobin;
 geojson:
     return tg_parse_geojsonn_ix(src, len, ix);
 wkt:
@@ -14361,6 +14368,8 @@ hex:
     return tg_parse_hexn_ix(src, len, ix);
 wkb:
     return tg_parse_wkb_ix((uint8_t*)src, len, ix);
+geobin:
+    return tg_parse_geobin_ix((uint8_t*)src, len, ix);
 }
 
 /// Utility for returning an error message wrapped in a geometry.
@@ -14376,4 +14385,427 @@ struct tg_geom *tg_geom_new_error(const char *error) {
 void tg_geom_setnoheap(struct tg_geom *geom) {
     geom->head.rc = 0;
     geom->head.noheap = 1;
+}
+
+/// Parse GeoBIN binary using provided indexing option.
+/// @param geobin GeoBIN data
+/// @param len Length of data
+/// @param ix Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
+/// @returns A geometry or an error. Use tg_geom_error() after parsing to check
+/// for errors. 
+/// @see tg_parse_geobin_ix()
+/// @see tg_geom_error()
+/// @see tg_geom_geobin()
+/// @see https://github.com/tidwall/tg/blob/main/docs/GeoBIN.md
+/// @see GeometryParsing
+struct tg_geom *tg_parse_geobin(const uint8_t *geobin, size_t len) {
+    return tg_parse_geobin_ix(geobin, len, 0);
+}
+
+static size_t parse_geobin(const uint8_t *geobin, size_t len, size_t i, 
+    size_t depth, enum tg_index ix, struct tg_geom **g)
+{
+    if (i == len) goto invalid;
+    if (depth > MAXDEPTH) goto invalid;
+    int head = geobin[i];
+    if (head == 0x01) {
+        return parse_wkb(geobin, len, i, depth, ix, g);
+    }
+    i++;
+    if (head < 0x02 || head > 0x04) {
+        goto invalid;
+    }
+    if (i == len) {
+        goto invalid;
+    }
+    int dims = geobin[i++];
+    if (dims && (dims < 2 || dims > 4)) {
+        goto invalid;
+    }
+    if (dims) {
+        i += 8*dims*2;
+        if (i >= len) {
+            goto invalid;
+        }
+    }
+    size_t xjsonlen = 0;
+    const char *xjson = (const char*)(geobin+i);
+    for (; i < len; i++) {
+        if (geobin[i] == '\0') {
+            i++;
+            break;
+        }
+        xjsonlen++;
+    }
+    if (i == len) {
+        goto invalid;
+    }
+    if (xjsonlen > 0 && !json_validn(xjson, xjsonlen)) {
+        goto invalid;
+    }
+    struct tg_geom *geom;
+    if (head == 0x04) {
+        // FeatureCollection
+        if (i+4 > len) {
+            goto invalid;
+        }
+        uint32_t nfeats;
+        memcpy(&nfeats, geobin+i, 4);
+        i += 4;
+        struct tg_geom **feats = tg_malloc(nfeats*sizeof(struct tg_geom*));
+        if (!feats) {
+            return 0;
+        }
+        struct tg_geom *feat = 0;
+        uint32_t j = 0;
+        for (; j < nfeats; j++) {
+            i = parse_geobin(geobin, len, i, depth+1, ix, &feat);
+            if (i == PARSE_FAIL) {
+                break;
+            }
+            feats[j] = feat;
+        }
+        if (j == nfeats) {
+            geom = tg_geom_new_geometrycollection((void*)feats, nfeats);
+        }
+        for (uint32_t k = 0; k < j; k++) {
+            tg_geom_free(feats[k]);
+        }
+        tg_free(feats);
+        if (j < nfeats) {
+            *g = feat; // return the last failed feature
+            return PARSE_FAIL;
+        }
+        if (!geom) {
+            *g = 0;
+            return PARSE_FAIL;
+        }
+        geom->head.flags |= IS_FEATURE_COL;
+    } else {
+        i = parse_wkb(geobin, len, i, depth, ix, &geom);
+    }
+    if (i == PARSE_FAIL || !geom) {
+        *g = geom;
+        return PARSE_FAIL;
+    }
+    if ((xjsonlen > 0 || head == 0x03) && geom->head.base != BASE_GEOM) {
+        // Wrap base in tg_geom
+        struct tg_geom *g2 = geom_new(geom->head.type);
+        if (!g2) {
+            tg_geom_free(geom);
+            *g = 0;
+            return PARSE_FAIL;
+        }
+        if (geom->head.base == BASE_POINT) {
+            g2->point = ((struct boxed_point*)geom)->point;
+            boxed_point_free((struct boxed_point*)geom);
+        } else {
+            g2->line = (struct tg_line*)geom;
+        }
+        geom = g2;
+    }
+    if (head == 0x03) {
+        geom->head.flags |= IS_FEATURE;
+    }
+    if (xjsonlen > 0) {
+        geom->xjson = tg_malloc(xjsonlen+1);
+        if (!geom->xjson) {
+            tg_geom_free(geom);
+            *g = 0;
+            return PARSE_FAIL;
+        }
+        memcpy(geom->xjson, xjson, xjsonlen+1);
+    }
+    *g = geom;
+    return i;
+invalid:
+    *g = make_parse_error("invalid binary");
+    return PARSE_FAIL;
+    
+}
+
+/// Parse GeoBIN binary using provided indexing option.
+/// @param geobin GeoBIN data
+/// @param len Length of data
+/// @param ix Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
+/// @returns A geometry or an error. Use tg_geom_error() after parsing to check
+/// for errors. 
+/// @see tg_parse_geobin()
+struct tg_geom *tg_parse_geobin_ix(const uint8_t *geobin, size_t len,
+    enum tg_index ix)
+{
+    struct tg_geom *geom = NULL;
+    parse_geobin(geobin, len, 0, 0, ix, &geom);
+    if (!geom) return NULL;
+    if ((geom->head.flags&IS_ERROR) == IS_ERROR) {
+        struct tg_geom *gerr = make_parse_error("ParseError: %s", geom->error);
+        tg_geom_free(geom);
+        return gerr;
+    }
+    return geom;
+}
+
+static void write_geom_geobin(const struct tg_geom *geom, struct writer *wr);
+
+static void write_base_geom_geobin(const struct tg_geom *geom,
+    struct writer *wr)
+{
+    // extra json section
+    const char *xjson = tg_geom_extra_json(geom);
+    
+    // write head byte
+    if ((geom->head.flags&IS_FEATURE_COL) == IS_FEATURE_COL) {
+        write_byte(wr, 0x04);
+    } else if ((geom->head.flags&IS_FEATURE) == IS_FEATURE) {
+        write_byte(wr, 0x03);
+    } else if (geom->head.type == TG_POINT && !xjson) {
+        write_geom_point_wkb(geom, wr);
+        return;
+    } else {
+        write_byte(wr, 0x02);
+    }
+    
+    // mbr section
+    double min[4], max[4];
+    int dims = tg_geom_fullrect(geom, min, max);
+    write_byte(wr, dims);
+    for (int i = 0; i < dims; i++) {
+        write_doublele(wr, min[i]);
+    }
+    for (int i = 0; i < dims; i++) {
+        write_doublele(wr, max[i]);
+    }
+    
+    if (xjson) {
+        write_string(wr, xjson);
+    }
+    write_byte(wr, 0);
+    
+    if ((geom->head.flags&IS_FEATURE_COL) == IS_FEATURE_COL) {
+        // write feature collection
+        int ngeoms = tg_geom_num_geometries(geom);
+        write_uint32le(wr, (uint32_t)ngeoms);
+        for (int i = 0; i < ngeoms; i++) {
+            const struct tg_geom *g2 = tg_geom_geometry_at(geom, i);
+            write_geom_geobin(g2, wr);
+        }
+    } else {
+        // write wkb
+        write_geom_wkb(geom, wr);
+    }
+}
+
+static void write_point_geobin(struct boxed_point *point, struct writer *wr) {
+    write_point_wkb(point, wr);
+}
+
+static void write_geobin_rect(struct writer *wr, struct tg_rect rect) {
+    write_byte(wr, 2); // dims
+    write_doublele(wr, rect.min.x);
+    write_doublele(wr, rect.min.y);
+    write_doublele(wr, rect.max.x);
+    write_doublele(wr, rect.max.y);
+}
+
+static void write_line_geobin(struct tg_line *line, struct writer *wr) {
+    write_byte(wr, 0x02);
+    write_geobin_rect(wr, ((struct tg_ring*)line)->rect);
+    write_byte(wr, 0);
+    write_line_wkb(line, wr);
+}
+
+static void write_ring_geobin(struct tg_ring *ring, struct writer *wr) {
+    write_byte(wr, 0x02);
+    write_geobin_rect(wr, ring->rect);
+    write_byte(wr, 0);
+    write_ring_wkb(ring, wr);
+}
+
+static void write_poly_geobin(struct tg_poly *poly, struct writer *wr) {
+    write_byte(wr, 0x02);
+    write_geobin_rect(wr, poly->exterior->rect);
+    write_byte(wr, 0);
+    write_poly_wkb(poly, wr);
+}
+
+static void write_geom_geobin(const struct tg_geom *geom, struct writer *wr) {
+    if ((geom->head.flags&IS_FEATURE) == IS_FEATURE) {
+        goto base_geom;
+    }
+    switch (geom->head.base) {
+    case BASE_GEOM:
+    base_geom:
+        write_base_geom_geobin(geom, wr);
+        break;
+    case BASE_POINT:
+        write_point_geobin((struct boxed_point*)geom, wr);
+        break;
+    case BASE_LINE:
+        write_line_geobin((struct tg_line*)geom, wr);
+        break;
+    case BASE_RING:
+        write_ring_geobin((struct tg_ring*)geom, wr);
+        break;
+    case BASE_POLY:
+        write_poly_geobin((struct tg_poly*)geom, wr);
+        break;
+    }
+}
+
+/// Writes a GeoBIN representation of a geometry.
+///
+/// The content is stored in the buffer pointed by dst.
+///
+/// @param geom Input geometry
+/// @param dst Buffer where the resulting content is stored.
+/// @param n Maximum number of bytes to be used in the buffer.
+/// @return  The number of characters needed to store the content into the
+/// buffer.
+/// If the returned length is greater than n, then only a parital copy
+/// occurred, for example:
+///
+/// ```
+/// uint8_t buf[64];
+/// size_t len = tg_geom_geobin(geom, buf, sizeof(buf));
+/// if (len > sizeof(buf)) {
+///     // ... write did not complete ...
+/// }
+/// ```
+///
+/// @see tg_geom_geojson()
+/// @see tg_geom_wkt()
+/// @see tg_geom_wkb()
+/// @see tg_geom_hex()
+/// @see GeometryWriting
+size_t tg_geom_geobin(const struct tg_geom *geom, uint8_t *dst, size_t n) {
+    if (!geom) return 0;
+    struct writer wr = { .dst = dst, .n = n };
+    write_geom_geobin(geom, &wr);
+    return wr.count;
+}
+
+/// Returns the minimum bounding rectangle of a geometry on all dimensions.
+/// @param geom Input geometry
+/// @param min min values, must have room for 4 dimensions
+/// @param max max values, must have room for 4 dimensions
+/// @return number of dimensions, or zero if invalid geom.
+/// @see tg_geom_rect()
+int tg_geom_fullrect(const struct tg_geom *geom, double min[4], double max[4]) {
+    if (!geom) {
+        return 0;
+    }
+    struct tg_rect rect = tg_geom_rect(geom);
+    min[0] = rect.min.x;
+    min[1] = rect.min.y;
+    min[2] = 0;
+    min[3] = 0;
+    max[0] = rect.max.x;
+    max[1] = rect.max.y;
+    max[2] = 0;
+    max[3] = 0;
+    int dims = 2;
+    if (geom->head.base == BASE_GEOM) {
+        if (geom->head.type == TG_POINT) {
+            // Point
+            if ((geom->head.flags&HAS_Z) == HAS_Z) {
+                min[dims] = geom->z;
+                max[dims] = geom->z;
+                dims++;
+            }
+            if ((geom->head.flags&HAS_M) == HAS_M) {
+                min[dims] = geom->m;
+                max[dims] = geom->m;
+                dims++;
+            }
+        } else if (geom->head.type == TG_GEOMETRYCOLLECTION && geom->multi) {
+            // GeometryCollection. Expand all child geometries
+            struct tg_geom **geoms = geom->multi->geoms;
+            int ngeoms = geom->multi->ngeoms;
+            double gmin[4], gmax[4];
+            for (int i = 0; i < ngeoms; i++) {
+                int gdims = tg_geom_fullrect(geoms[i], gmin, gmax);
+                if (gdims >= 3) {
+                    if (dims == 2) {
+                        min[2] = gmin[2];
+                        max[2] = gmax[2];
+                        dims++;
+                    } else {
+                        min[2] = fmin0(min[2], gmin[2]);
+                        max[2] = fmax0(max[2], gmax[2]);
+                    }
+                }
+                if (gdims >= 4) {
+                    if (dims == 3) {
+                        min[3] = gmin[3];
+                        max[3] = gmax[3];
+                        dims++;
+                    } else {
+                        min[3] = fmin0(min[3], gmin[3]);
+                        max[3] = fmax0(max[3], gmax[3]);
+                    }
+                }
+            }
+        } else {
+            // Other geometries
+            if ((geom->head.flags&HAS_Z) == HAS_Z) dims++;
+            if ((geom->head.flags&HAS_M) == HAS_M) dims++;
+            if (dims == 3 && geom->ncoords > 0) {
+                min[2] = geom->coords[0];
+                max[2] = geom->coords[0];
+                for (int i = 1; i < geom->ncoords; i++) {
+                    min[2] = fmin0(min[2], geom->coords[i]);
+                    max[2] = fmax0(max[2], geom->coords[i]);
+                }
+            } else if (dims == 4 && geom->ncoords > 1) {
+                min[2] = geom->coords[0];
+                min[3] = geom->coords[1];
+                max[2] = geom->coords[0];
+                max[3] = geom->coords[1];
+                for (int i = 2; i < geom->ncoords-1; i+=2) {
+                    min[2] = fmin0(min[2], geom->coords[i]);
+                    min[3] = fmin0(min[3], geom->coords[i+1]);
+                    max[2] = fmax0(max[2], geom->coords[i]);
+                    max[3] = fmax0(max[3], geom->coords[i+1]);
+                }
+            }
+        }
+    }
+    return dims;
+}
+
+/// Returns the minimum bounding rectangle of GeoBIN data.
+/// @param geobin GeoBIN data
+/// @param len Length of data
+/// @param min min values, must have room for 4 dimensions
+/// @param max max values, must have room for 4 dimensions
+/// @return number of dimensions, or zero if rect cannot be determined.
+/// @see tg_geom_fullrect()
+/// @see tg_geom_rect()
+int tg_geobin_fullrect(const uint8_t *geobin, size_t len, double min[4],
+    double max[4])
+{
+    size_t dims = 0;
+    if (geobin && len > 2 && geobin[0] >= 0x01 && geobin[0] <= 0x04) {
+        if (geobin[0] == 0x01 && len >= 5) {
+            // Read Point
+            uint32_t type;
+            memcpy(&type, geobin+1, 4);
+            switch (type) {
+            case    1: dims = 2; break;
+            case 1001: dims = 3; break;
+            case 2001: dims = 3; break;
+            case 3001: dims = 4; break;
+            }
+            if (dims > 0 && len >= 5+8*dims) {
+                memcpy(min, geobin+5, 8*dims);
+                memcpy(max, geobin+5, 8*dims);
+            }
+        } else if (geobin[0] != 0x01 && len >= 2+8*geobin[1]*2){
+            // Read MBR
+            dims = geobin[1];
+            memcpy(min, geobin+2, 8*dims);
+            memcpy(max, geobin+2+8*dims, 8*dims);
+        }
+    }
+    return dims;
 }

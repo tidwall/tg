@@ -182,6 +182,7 @@ Functions for accessing various information about geometries, such as getting th
 - [tg_geom_num_extra_coords()](#group___geometry_accessors_1ga5f85cf4c143703ee227e3c35accbde8b)
 - [tg_geom_memsize()](#group___geometry_accessors_1ga4931914f5170cce2949cfdd79e34ef63)
 - [tg_geom_search()](#group___geometry_accessors_1gad18cdb2a4ab1fa711dce821a0868ecd2)
+- [tg_geom_fullrect()](#group___geometry_accessors_1gac1a077f09e247c022f09e48392b80051)
 
 
 <a name='group___geometry_predicates'></a>
@@ -224,9 +225,12 @@ Functions for parsing geometries from external data representations. It's recomm
 - [tg_parse_hexn()](#group___geometry_parsing_1ga2beb47ee201ddbd1a9a7a43c938c4396)
 - [tg_parse_hex_ix()](#group___geometry_parsing_1ga8718e134723418426e5df2b13acdf0c1)
 - [tg_parse_hexn_ix()](#group___geometry_parsing_1ga3d1f9eb85ff97812fed7cf7bf9e14bd4)
+- [tg_parse_geobin()](#group___geometry_parsing_1ga4792bf4f319356fff3fa539cbd44b196)
+- [tg_parse_geobin_ix()](#group___geometry_parsing_1gac0450996bcd71cdde81af451dd0e9571)
 - [tg_parse()](#group___geometry_parsing_1gaa9e5850bb2cc4eb442c227cd5ac738a1)
 - [tg_parse_ix()](#group___geometry_parsing_1gae0bfc62deb68979a46ed62facfee1280)
 - [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e)
+- [tg_geobin_fullrect()](#group___geometry_parsing_1gac77e3d8d51a7e66381627cb25853d80f)
 
 
 <a name='group___geometry_writing'></a>
@@ -240,6 +244,7 @@ Functions for writing geometries as external data representations.
 - [tg_geom_wkt()](#group___geometry_writing_1ga047599bbe51886a6c3fbe35a6372d5d6)
 - [tg_geom_wkb()](#group___geometry_writing_1gac0938697f9270d1924c6746af68dd693)
 - [tg_geom_hex()](#group___geometry_writing_1ga269f61715302d48f144ffaf46e8c397b)
+- [tg_geom_geobin()](#group___geometry_writing_1gab0f92319db4b8c61c62e0bd735d907b7)
 
 
 <a name='group___geometry_constructors_ex'></a>
@@ -1629,6 +1634,32 @@ Iterates over all child geometries in geom that intersect rect
 
 
 
+<a name='group___geometry_accessors_1gac1a077f09e247c022f09e48392b80051'></a>
+## tg_geom_fullrect()
+```c
+int tg_geom_fullrect(const struct tg_geom *geom, double min[4], double max[4]);
+```
+Returns the minimum bounding rectangle of a geometry on all dimensions. 
+
+**Parameters**
+
+- **geom**: Input geometry
+- **min**: min values, must have room for 4 dimensions
+- **max**: max values, must have room for 4 dimensions
+
+
+
+**Return**
+
+- number of dimensions, or zero if invalid geom.
+
+
+**See also**
+
+- [tg_geom_rect()](#group___geometry_accessors_1ga68d67f900b847ae08e6515a620f4f657)
+
+
+
 <a name='group___geometry_predicates_1ga87876bf188ea21a55900b497bad436f0'></a>
 ## tg_geom_equals()
 ```c
@@ -2074,7 +2105,7 @@ Parse Well-known binary (WKB) using provided indexing option.
 ```c
 struct tg_geom *tg_parse_hex(const char *hex);
 ```
-Parse hex encoded Well-known binary (WKB). 
+Parse hex encoded Well-known binary (WKB) or GeoBIN. 
 
 **Parameters**
 
@@ -2103,7 +2134,7 @@ Parse hex encoded Well-known binary (WKB).
 ```c
 struct tg_geom *tg_parse_hexn(const char *hex, size_t len);
 ```
-Parse hex encoded Well-known binary (WKB) with an included data length. 
+Parse hex encoded Well-known binary (WKB) or GeoBIN with an included data length. 
 
 **Parameters**
 
@@ -2129,7 +2160,7 @@ Parse hex encoded Well-known binary (WKB) with an included data length.
 ```c
 struct tg_geom *tg_parse_hex_ix(const char *hex, enum tg_index ix);
 ```
-Parse hex encoded Well-known binary (WKB) using provided indexing option. 
+Parse hex encoded Well-known binary (WKB) or GeoBIN using provided indexing option. 
 
 **Parameters**
 
@@ -2156,7 +2187,7 @@ Parse hex encoded Well-known binary (WKB) using provided indexing option.
 ```c
 struct tg_geom *tg_parse_hexn_ix(const char *hex, size_t len, enum tg_index ix);
 ```
-Parse hex encoded Well-known binary (WKB) using provided indexing option. 
+Parse hex encoded Well-known binary (WKB) or GeoBIN using provided indexing option. 
 
 **Parameters**
 
@@ -2176,6 +2207,62 @@ Parse hex encoded Well-known binary (WKB) using provided indexing option.
 - [tg_parse_hex()](#group___geometry_parsing_1ga0fc4fd8cb076a78c44df07c517281f67)
 - [tg_parse_hex_ix()](#group___geometry_parsing_1ga8718e134723418426e5df2b13acdf0c1)
 - [Geometry parsing](#group___geometry_parsing)
+
+
+
+<a name='group___geometry_parsing_1ga4792bf4f319356fff3fa539cbd44b196'></a>
+## tg_parse_geobin()
+```c
+struct tg_geom *tg_parse_geobin(const uint8_t *geobin, size_t len);
+```
+Parse GeoBIN binary using provided indexing option. 
+
+**Parameters**
+
+- **geobin**: GeoBIN data
+- **len**: Length of data
+- **ix**: Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
+
+
+
+**Return**
+
+- A geometry or an error. Use [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e) after parsing to check for errors.
+
+
+**See also**
+
+- [tg_parse_geobin_ix()](#group___geometry_parsing_1gac0450996bcd71cdde81af451dd0e9571)
+- [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e)
+- [tg_geom_geobin()](#group___geometry_writing_1gab0f92319db4b8c61c62e0bd735d907b7)
+- [https://github.com/tidwall/tg/blob/main/docs/GeoBIN.md](https://github.com/tidwall/tg/blob/main/docs/GeoBIN.md)
+- [Geometry parsing](#group___geometry_parsing)
+
+
+
+<a name='group___geometry_parsing_1gac0450996bcd71cdde81af451dd0e9571'></a>
+## tg_parse_geobin_ix()
+```c
+struct tg_geom *tg_parse_geobin_ix(const uint8_t *geobin, size_t len, enum tg_index ix);
+```
+Parse GeoBIN binary using provided indexing option. 
+
+**Parameters**
+
+- **geobin**: GeoBIN data
+- **len**: Length of data
+- **ix**: Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
+
+
+
+**Return**
+
+- A geometry or an error. Use [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e) after parsing to check for errors.
+
+
+**See also**
+
+- [tg_parse_geobin()](#group___geometry_parsing_1ga4792bf4f319356fff3fa539cbd44b196)
 
 
 
@@ -2288,6 +2375,34 @@ if (tg_geom_error(geom)) {
 - [tg_parse_wkb()](#group___geometry_parsing_1ga6929035c4b0e606ef84537272d1ece30)
 - [tg_parse_hex()](#group___geometry_parsing_1ga0fc4fd8cb076a78c44df07c517281f67)
 - [Geometry parsing](#group___geometry_parsing)
+
+
+
+<a name='group___geometry_parsing_1gac77e3d8d51a7e66381627cb25853d80f'></a>
+## tg_geobin_fullrect()
+```c
+int tg_geobin_fullrect(const uint8_t *geobin, size_t len, double min[4], double max[4]);
+```
+Returns the minimum bounding rectangle of GeoBIN data. 
+
+**Parameters**
+
+- **geobin**: GeoBIN data
+- **len**: Length of data
+- **min**: min values, must have room for 4 dimensions
+- **max**: max values, must have room for 4 dimensions
+
+
+
+**Return**
+
+- number of dimensions, or zero if rect cannot be determined.
+
+
+**See also**
+
+- [tg_geom_fullrect()](#group___geometry_accessors_1gac1a077f09e247c022f09e48392b80051)
+- [tg_geom_rect()](#group___geometry_accessors_1ga68d67f900b847ae08e6515a620f4f657)
 
 
 
@@ -2455,6 +2570,49 @@ if (len > sizeof(str)-1) {
 - [tg_geom_geojson()](#group___geometry_writing_1gae4669b8ee598a46e7f4c5a11e645fe8f)
 - [tg_geom_wkt()](#group___geometry_writing_1ga047599bbe51886a6c3fbe35a6372d5d6)
 - [tg_geom_wkb()](#group___geometry_writing_1gac0938697f9270d1924c6746af68dd693)
+- [Geometry writing](#group___geometry_writing)
+
+
+
+<a name='group___geometry_writing_1gab0f92319db4b8c61c62e0bd735d907b7'></a>
+## tg_geom_geobin()
+```c
+size_t tg_geom_geobin(const struct tg_geom *geom, uint8_t *dst, size_t n);
+```
+Writes a GeoBIN representation of a geometry.
+
+The content is stored in the buffer pointed by dst.
+
+
+
+**Parameters**
+
+- **geom**: Input geometry
+- **dst**: Buffer where the resulting content is stored.
+- **n**: Maximum number of bytes to be used in the buffer.
+
+
+
+**Return**
+
+- The number of characters needed to store the content into the buffer. If the returned length is greater than n, then only a parital copy occurred, for example:
+```c
+uint8_t buf[64];
+size_t len = tg_geom_geobin(geom, buf, sizeof(buf));
+if (len > sizeof(buf)) {
+    // ... write did not complete ...
+}
+```
+
+
+
+
+**See also**
+
+- [tg_geom_geojson()](#group___geometry_writing_1gae4669b8ee598a46e7f4c5a11e645fe8f)
+- [tg_geom_wkt()](#group___geometry_writing_1ga047599bbe51886a6c3fbe35a6372d5d6)
+- [tg_geom_wkb()](#group___geometry_writing_1gac0938697f9270d1924c6746af68dd693)
+- [tg_geom_hex()](#group___geometry_writing_1ga269f61715302d48f144ffaf46e8c397b)
 - [Geometry writing](#group___geometry_writing)
 
 
