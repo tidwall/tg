@@ -44,7 +44,7 @@ if [[ "$CC" == "" ]]; then
     CC=cc
 fi
 if [[ "$1" != "bench" ]]; then
-    CFLAGS="-O0 -g3 -Wall -Wextra -fstrict-aliasing $CFLAGS"
+    CFLAGS="-O0 -g2 -Wall -Wextra -fstrict-aliasing $CFLAGS"
     CCVERSHEAD="$($CC --version | head -n 1)"
     if [[ "$CCVERSHEAD" == "" ]]; then
         exit 1
@@ -84,7 +84,7 @@ if [[ "$1" != "bench" ]]; then
             fi
         fi
     fi
-    CFLAGS=${CFLAGS:-"-O0 -g3 -Wall -Wextra -fstrict-aliasing"}
+    CFLAGS=${CFLAGS:-"-O0 -g2 -Wall -Wextra -fstrict-aliasing"}
 else
     CFLAGS=${CFLAGS:-"-O3"}
 fi
