@@ -53,37 +53,37 @@ void perfect_match(const char *geojson_or_wkt, const char *expect, int dims, dou
 
 void test_geobin_basic_syntax(void) {
     assert(tg_geom_geobin(0, 0, 0) == 0);
-    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44]}", 0, 2, (double[]){55, 44}, (double[]){55, 44});
-    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44,33]}", 0, 3, (double[]){55, 44, 33}, (double[]){55, 44, 33});
-    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44,33,22]}", 0, 4, (double[]){55, 44, 33, 22}, (double[]){55, 44, 33, 22});
-    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44],\"a\":{\"b\":\"c\"}}", 0, 2, (double[]){55, 44}, (double[]){55, 44});
-    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44,33],\"a\":{\"b\":\"c\"}}", 0, 3, (double[]){55, 44, 33}, (double[]){55, 44, 33});
-    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44,33,22],\"a\":{\"b\":\"c\"}}", 0, 4, (double[]){55, 44, 33, 22}, (double[]){55, 44, 33, 22});
-    perfect_match("POINT(55 44)", 0, 2, (double[]){55, 44}, (double[]){55, 44});
-    perfect_match("POINT(55 44 33)", 0, 3, (double[]){55, 44, 33}, (double[]){55, 44, 33});
-    perfect_match("POINT(55 44 33 22)", 0, 4, (double[]){55, 44, 33, 22}, (double[]){55, 44, 33, 22});
-    perfect_match("POINT(55 44)", 0, 2, (double[]){55, 44}, (double[]){55, 44});
-    perfect_match("POINTZ(55 44 33)", "POINT(55 44 33)", 3, (double[]){55, 44, 33}, (double[]){55, 44, 33});
-    perfect_match("POINTM(55 44 33)", "POINT M(55 44 33)", 3, (double[]){55, 44, 33}, (double[]){55, 44, 33});
-    perfect_match("POINT(55 44 33 22)", 0, 4, (double[]){55, 44, 33, 22}, (double[]){55, 44, 33, 22});
-    perfect_match("{\"type\":\"LineString\",\"coordinates\":[[55,44],[33,22]]}", 0, 2, (double[]){33, 22}, (double[]){55, 44});
-    perfect_match("{\"type\":\"LineString\",\"coordinates\":[[55,44,11],[33,22,66]]}", 0, 3, (double[]){33, 22,11}, (double[]){55, 44,66});
-    perfect_match("{\"type\":\"LineString\",\"coordinates\":[[55,44,11,99],[33,22,66,77]]}", 0, 4, (double[]){33, 22, 11, 77}, (double[]){55, 44, 66, 99});
-    perfect_match("{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[33,44]]]}", 0, 2, (double[]){33, 44}, (double[]){55, 66});
-    perfect_match("{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[44,66],[33,44]],[[42,61],[46,61],[46,64],[42,61]]]}", 0, 2, (double[]){33, 44}, (double[]){55, 66});
+    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44]}", 0, 2, (double[4]){55, 44}, (double[4]){55, 44});
+    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44,33]}", 0, 3, (double[4]){55, 44, 33}, (double[4]){55, 44, 33});
+    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44,33,22]}", 0, 4, (double[4]){55, 44, 33, 22}, (double[4]){55, 44, 33, 22});
+    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44],\"a\":{\"b\":\"c\"}}", 0, 2, (double[4]){55, 44}, (double[4]){55, 44});
+    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44,33],\"a\":{\"b\":\"c\"}}", 0, 3, (double[4]){55, 44, 33}, (double[4]){55, 44, 33});
+    perfect_match("{\"type\":\"Point\",\"coordinates\":[55,44,33,22],\"a\":{\"b\":\"c\"}}", 0, 4, (double[4]){55, 44, 33, 22}, (double[4]){55, 44, 33, 22});
+    perfect_match("POINT(55 44)", 0, 2, (double[4]){55, 44}, (double[4]){55, 44});
+    perfect_match("POINT(55 44 33)", 0, 3, (double[4]){55, 44, 33}, (double[4]){55, 44, 33});
+    perfect_match("POINT(55 44 33 22)", 0, 4, (double[4]){55, 44, 33, 22}, (double[4]){55, 44, 33, 22});
+    perfect_match("POINT(55 44)", 0, 2, (double[4]){55, 44}, (double[4]){55, 44});
+    perfect_match("POINTZ(55 44 33)", "POINT(55 44 33)", 3, (double[4]){55, 44, 33}, (double[4]){55, 44, 33});
+    perfect_match("POINTM(55 44 33)", "POINT M(55 44 33)", 3, (double[4]){55, 44, 33}, (double[4]){55, 44, 33});
+    perfect_match("POINT(55 44 33 22)", 0, 4, (double[4]){55, 44, 33, 22}, (double[4]){55, 44, 33, 22});
+    perfect_match("{\"type\":\"LineString\",\"coordinates\":[[55,44],[33,22]]}", 0, 2, (double[4]){33, 22}, (double[4]){55, 44});
+    perfect_match("{\"type\":\"LineString\",\"coordinates\":[[55,44,11],[33,22,66]]}", 0, 3, (double[4]){33, 22,11}, (double[4]){55, 44,66});
+    perfect_match("{\"type\":\"LineString\",\"coordinates\":[[55,44,11,99],[33,22,66,77]]}", 0, 4, (double[4]){33, 22, 11, 77}, (double[4]){55, 44, 66, 99});
+    perfect_match("{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[33,44]]]}", 0, 2, (double[4]){33, 44}, (double[4]){55, 66});
+    perfect_match("{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[44,66],[33,44]],[[42,61],[46,61],[46,64],[42,61]]]}", 0, 2, (double[4]){33, 44}, (double[4]){55, 66});
     perfect_match(
         "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[44,66],[33,44]],[[42,61],[46,61],[46,64],[42,61]]]}}", 
         "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[44,66],[33,44]],[[42,61],[46,61],[46,64],[42,61]]]},\"properties\":{}}", 
-        2, (double[]){33, 44}, (double[]){55, 66});
+        2, (double[4]){33, 44}, (double[4]){55, 66});
     perfect_match(
         "{\"type\":\"Feature\",\"id\":123,\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[44,66],[33,44]],[[42,61],[46,61],[46,64],[42,61]]]},\"properties\":{\"a\":\"b\"}}", 
-        0, 2, (double[]){33, 44}, (double[]){55, 66});
+        0, 2, (double[4]){33, 44}, (double[4]){55, 66});
     perfect_match(
         "{\"type\":\"FeatureCollection\",\"features\":["
             "{\"type\":\"Feature\",\"id\":123,\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[44,66],[33,44]],[[42,61],[46,61],[46,64],[42,61]]]},\"properties\":{\"a\":\"b\"}},"
             "{\"type\":\"Feature\",\"id\":123,\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[[[33,44],[55,66],[44,66],[33,44]],[[42,61],[46,61],[46,64],[42,61]]]},\"properties\":{\"a\":\"b\"}}"
         "]}",
-        0, 2, (double[]){33, 44}, (double[]){55, 66});
+        0, 2, (double[4]){33, 44}, (double[4]){55, 66});
 }
 
 void test_geobin_fail() {

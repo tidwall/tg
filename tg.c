@@ -14800,7 +14800,7 @@ int tg_geobin_fullrect(const uint8_t *geobin, size_t len, double min[4],
                 memcpy(min, geobin+5, 8*dims);
                 memcpy(max, geobin+5, 8*dims);
             }
-        } else if (geobin[0] != 0x01 && len >= 2+8*geobin[1]*2){
+        } else if (geobin[0] != 0x01 && len >= 2+8*(size_t)geobin[1]*2){
             // Read MBR
             dims = geobin[1];
             memcpy(min, geobin+2, 8*dims);
