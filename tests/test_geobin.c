@@ -30,6 +30,30 @@ void perfect_match(const char *geojson_or_wkt, const char *expect, int dims, dou
 
     cmpfullrect(gdims, gmin, gmax, dims, min, max);
 
+    struct tg_rect rect = tg_geobin_rect(geobin, geobinlen);
+    gdims = 2;
+    gmin[0] = rect.min.x;
+    gmin[1] = rect.min.y;
+    gmax[0] = rect.max.x;
+    gmax[1] = rect.max.y;
+    cmpfullrect(gdims, gmin, gmax, 2, min, max);
+
+    struct tg_point point = tg_geobin_point(geobin, geobinlen);
+    gdims = 2;
+    gmin[0] = point.x;
+    gmin[1] = point.y;
+    gmax[0] = point.x;
+    gmax[1] = point.y;
+
+    double min2[4], max2[4];
+    min2[0] = (gmin[0]+gmax[0])/2;
+    min2[1] = (gmin[1]+gmax[1])/2;
+    max2[0] = min2[0];
+    max2[1] = min2[1];
+    cmpfullrect(gdims, gmin, gmax, 2, min2, max2);
+
+
+
     char geojson_or_wkt2[100000];
     size_t geojson_or_wkt2len;
     if (geojson_or_wkt[0] == '{') {
@@ -169,5 +193,6 @@ int main(int argc, char **argv) {
     do_test(test_geobin_fail);
     do_test(test_geobin_max_depth);
     do_chaos_test(test_geobin_chaos);
+    do_test(test_geobin_basic_syntax);
     return 0;
 }

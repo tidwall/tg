@@ -164,6 +164,8 @@ struct tg_geom *tg_parse(const void *data, size_t len);
 struct tg_geom *tg_parse_ix(const void *data, size_t len, enum tg_index ix);
 const char *tg_geom_error(const struct tg_geom *geom);
 int tg_geobin_fullrect(const uint8_t *geobin, size_t len, double min[4], double max[4]);
+struct tg_rect tg_geobin_rect(const uint8_t *geobin, size_t len);
+struct tg_point tg_geobin_point(const uint8_t *geobin, size_t len);
 
 /// @}
 

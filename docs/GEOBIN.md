@@ -53,8 +53,7 @@ dimensions, followed by a series of coordinates that define the rectangle.
 - 1-byte integer: number of dimensions (4)
 - 8-byte float[8]: `[xmin, ymin, zmin, mmin, xmax, ymax, zmax, mmax]`
 
-GeoBIN only supports 2, 3, or 4 dimensions; or zero to omit this section
-altogether.
+GeoBIN only supports 2, 3, or 4 dimensions.
 
 ### Extra JSON Section
 

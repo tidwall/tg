@@ -14810,3 +14810,57 @@ int tg_geobin_fullrect(const uint8_t *geobin, size_t len, double min[4],
     }
     return dims;
 }
+
+struct tg_rect tg_geobin_rect(const uint8_t *geobin, size_t len) {
+    struct tg_rect rect = { 0 };
+    if (geobin && len > 2 && geobin[0] >= 0x01 && geobin[0] <= 0x04) {
+        if (geobin[0] == 0x01 && len >= 21) {
+            // Read Point
+            uint32_t type;
+            memcpy(&type, geobin+1, 4);
+            if (type == 1 || type == 1001 || type == 2001 || type == 3001) {
+                memcpy(&rect.min.x, geobin+5, 8);
+                memcpy(&rect.min.y, geobin+5+8, 8);
+                rect.max.x = rect.min.x;
+                rect.max.y = rect.min.y;
+            }
+        } else if (geobin[0] != 0x01 && len >= 2+8*(size_t)geobin[1]*2){
+            // Read MBR
+            int dims = geobin[1];
+            if (dims >= 2) {
+                memcpy(&rect.min.x, geobin+2, 8);
+                memcpy(&rect.min.y, geobin+2+8, 8);
+                memcpy(&rect.max.x, geobin+2+8*dims, 8);
+                memcpy(&rect.max.y, geobin+2+8*dims+8, 8);
+            }
+        }
+    }
+    return rect;
+}
+
+struct tg_point tg_geobin_point(const uint8_t *geobin, size_t len) {
+    struct tg_point point = { 0 };
+    if (geobin && len > 2 && geobin[0] >= 0x01 && geobin[0] <= 0x04) {
+        if (geobin[0] == 0x01 && len >= 21) {
+            // Read Point
+            uint32_t type;
+            memcpy(&type, geobin+1, 4);
+            if (type == 1 || type == 1001 || type == 2001 || type == 3001) {
+                memcpy(&point.x, geobin+5, 8);
+                memcpy(&point.y, geobin+5+8, 8);
+            }
+        } else if (geobin[0] != 0x01 && len >= 2+8*(size_t)geobin[1]*2){
+            // Read MBR
+            struct tg_rect rect = { 0 };
+            int dims = geobin[1];
+            if (dims >= 2) {
+                memcpy(&rect.min.x, geobin+2, 8);
+                memcpy(&rect.min.y, geobin+2+8, 8);
+                memcpy(&rect.max.x, geobin+2+8*dims, 8);
+                memcpy(&rect.max.y, geobin+2+8*dims+8, 8);
+            }
+            point = tg_rect_center(rect);
+        }
+    }
+    return point;
+}
