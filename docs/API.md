@@ -231,6 +231,8 @@ Functions for parsing geometries from external data representations. It's recomm
 - [tg_parse_ix()](#group___geometry_parsing_1gae0bfc62deb68979a46ed62facfee1280)
 - [tg_geom_error()](#group___geometry_parsing_1gae77b27ad34c2a215cc281647ab6dbc7e)
 - [tg_geobin_fullrect()](#group___geometry_parsing_1gac77e3d8d51a7e66381627cb25853d80f)
+- [tg_geobin_rect()](#group___geometry_parsing_1gabf4ef20303d65ccb265ce5359abdfa79)
+- [tg_geobin_point()](#group___geometry_parsing_1gab318b6a815f21bb81440ad3edbb61afe)
 
 
 <a name='group___geometry_writing'></a>
@@ -2403,6 +2405,46 @@ Returns the minimum bounding rectangle of GeoBIN data.
 
 - [tg_geom_fullrect()](#group___geometry_accessors_1gac1a077f09e247c022f09e48392b80051)
 - [tg_geom_rect()](#group___geometry_accessors_1ga68d67f900b847ae08e6515a620f4f657)
+
+
+
+<a name='group___geometry_parsing_1gabf4ef20303d65ccb265ce5359abdfa79'></a>
+## tg_geobin_rect()
+```c
+struct tg_rect tg_geobin_rect(const uint8_t *geobin, size_t len);
+```
+Returns the minimum bounding rectangle of GeoBIN data. 
+
+**Parameters**
+
+- **geobin**: GeoBIN data
+- **len**: Length of data
+
+
+
+**Return**
+
+- the rectangle
+
+
+
+<a name='group___geometry_parsing_1gab318b6a815f21bb81440ad3edbb61afe'></a>
+## tg_geobin_point()
+```c
+struct tg_point tg_geobin_point(const uint8_t *geobin, size_t len);
+```
+Returns the center point of GeoBIN data. 
+
+**Parameters**
+
+- **geobin**: GeoBIN data
+- **len**: Length of data
+
+
+
+**Return**
+
+- the center point
 
 
 

@@ -166,7 +166,6 @@ const char *tg_geom_error(const struct tg_geom *geom);
 int tg_geobin_fullrect(const uint8_t *geobin, size_t len, double min[4], double max[4]);
 struct tg_rect tg_geobin_rect(const uint8_t *geobin, size_t len);
 struct tg_point tg_geobin_point(const uint8_t *geobin, size_t len);
-
 /// @}
 
 /// @defgroup GeometryWriting Geometry writing

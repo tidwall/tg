@@ -14811,6 +14811,10 @@ int tg_geobin_fullrect(const uint8_t *geobin, size_t len, double min[4],
     return dims;
 }
 
+/// Returns the minimum bounding rectangle of GeoBIN data.
+/// @param geobin GeoBIN data
+/// @param len Length of data
+/// @return the rectangle
 struct tg_rect tg_geobin_rect(const uint8_t *geobin, size_t len) {
     struct tg_rect rect = { 0 };
     if (geobin && len > 2 && geobin[0] >= 0x01 && geobin[0] <= 0x04) {
@@ -14838,6 +14842,10 @@ struct tg_rect tg_geobin_rect(const uint8_t *geobin, size_t len) {
     return rect;
 }
 
+/// Returns the center point of GeoBIN data.
+/// @param geobin GeoBIN data
+/// @param len Length of data
+/// @return the center point
 struct tg_point tg_geobin_point(const uint8_t *geobin, size_t len) {
     struct tg_point point = { 0 };
     if (geobin && len > 2 && geobin[0] >= 0x01 && geobin[0] <= 0x04) {
