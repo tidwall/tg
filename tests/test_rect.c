@@ -175,50 +175,50 @@ void fullrectmatch(const char *wkt, int dims, double min[4], double max[4]) {
 
 void test_rect_fullrect() {
     assert(tg_geom_fullrect(0, 0, 0) == 0);
-    fullrectmatch("POINT(10 20)", 2, (double[]){10, 20}, (double[]){10, 20});
-    fullrectmatch("POINT(10 20 30)", 3, (double[]){10, 20, 30}, (double[]){10, 20, 30});
-    fullrectmatch("POINT(10 20 30 40)", 4, (double[]){10, 20, 30, 40}, (double[]){10, 20, 30, 40});
-    fullrectmatch("LINESTRING(10 20,30 40)", 2,(double[]){10,20},(double[]){30,40});
-    fullrectmatch("LINESTRING(10 20 30,40 50 60)", 3,(double[]){10,20,30},(double[]){40,50,60});
-    fullrectmatch("LINESTRING(40 50 60,10 20 30)", 3,(double[]){10,20,30},(double[]){40,50,60});
-    fullrectmatch("LINESTRING(10 20 30 40,50 60 70 80)", 4,(double[]){10,20,30,40},(double[]){50,60,70,80});
-    fullrectmatch("LINESTRING(50 60 70 80,10 20 30 40)", 4,(double[]){10,20,30,40},(double[]){50,60,70,80});
+    fullrectmatch("POINT(10 20)", 2, (double[4]){10, 20}, (double[4]){10, 20});
+    fullrectmatch("POINT(10 20 30)", 3, (double[4]){10, 20, 30}, (double[4]){10, 20, 30});
+    fullrectmatch("POINT(10 20 30 40)", 4, (double[4]){10, 20, 30, 40}, (double[4]){10, 20, 30, 40});
+    fullrectmatch("LINESTRING(10 20,30 40)", 2,(double[4]){10,20},(double[4]){30,40});
+    fullrectmatch("LINESTRING(10 20 30,40 50 60)", 3,(double[4]){10,20,30},(double[4]){40,50,60});
+    fullrectmatch("LINESTRING(40 50 60,10 20 30)", 3,(double[4]){10,20,30},(double[4]){40,50,60});
+    fullrectmatch("LINESTRING(10 20 30 40,50 60 70 80)", 4,(double[4]){10,20,30,40},(double[4]){50,60,70,80});
+    fullrectmatch("LINESTRING(50 60 70 80,10 20 30 40)", 4,(double[4]){10,20,30,40},(double[4]){50,60,70,80});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(10 20)"
-    ")", 2, (double[]){10, 20}, (double[]){10, 20});
+    ")", 2, (double[4]){10, 20}, (double[4]){10, 20});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(10 20),"
         "POINT(30 40)"
-    ")", 2, (double[]){10, 20}, (double[]){30, 40});
+    ")", 2, (double[4]){10, 20}, (double[4]){30, 40});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(10 20 30),"
         "POINT(40 50 60)"
-    ")", 3, (double[]){10, 20, 30}, (double[]){40, 50, 60});
+    ")", 3, (double[4]){10, 20, 30}, (double[4]){40, 50, 60});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(10 20 30 40),"
         "POINT(50 60 70 80)"
-    ")", 4, (double[]){10, 20, 30, 40}, (double[]){50, 60, 70, 80});
+    ")", 4, (double[4]){10, 20, 30, 40}, (double[4]){50, 60, 70, 80});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(40 50 60),"
         "POINT(10 20 30)"
-    ")", 3, (double[]){10, 20, 30}, (double[]){40, 50, 60});
+    ")", 3, (double[4]){10, 20, 30}, (double[4]){40, 50, 60});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(50 60 70 80),"
         "POINT(10 20 30 40)"
-    ")", 4, (double[]){10, 20, 30, 40}, (double[]){50, 60, 70, 80});
+    ")", 4, (double[4]){10, 20, 30, 40}, (double[4]){50, 60, 70, 80});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(10 20),"
         "POINT(30 40 50)"
-    ")", 3, (double[]){10, 20, 50}, (double[]){30, 40, 50});
+    ")", 3, (double[4]){10, 20, 50}, (double[4]){30, 40, 50});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(10 20),"
         "POINT(30 40 50 60)"
-    ")", 4, (double[]){10, 20, 50, 60}, (double[]){30, 40, 50, 60});
+    ")", 4, (double[4]){10, 20, 50, 60}, (double[4]){30, 40, 50, 60});
     fullrectmatch("GEOMETRYCOLLECTION("
         "POINT(10 20),"
         "POINT(30 40 50 60),"
         "POINT(70 80 90)"
-    ")", 4, (double[]){10, 20, 50, 60}, (double[]){70, 80, 90, 60});
+    ")", 4, (double[4]){10, 20, 50, 60}, (double[4]){70, 80, 90, 60});
 }
 
 int main(int argc, char **argv) {
