@@ -14456,6 +14456,7 @@ static size_t parse_geobin(const uint8_t *geobin, size_t len, size_t i,
         if (!feats) {
             return 0;
         }
+        memset(feats, 0, nfeats*sizeof(struct tg_geom*));
         struct tg_geom *feat = 0;
         uint32_t j = 0;
         for (; j < nfeats; j++) {
