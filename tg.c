@@ -50,37 +50,45 @@ enum flags {
     IS_UNLOCATED   = 1<<7,  // GeoJSON. 'Feature' with 'geometry'=null
 };
 
-// Reference counting in TG defaults to zero. This means that a zero value for
-// an object with an rc_t field holds a single reference. Only when the rc_t
-// falls below zero will the owning object be freed.
-//
-// rc_add adds a new reference
-// rc_sub removes a reference. Returns false if the owning object can be freed.
-//
 // Optionally use non-atomic reference counting when TG_NOATOMICS is defined.
 #ifdef TG_NOATOMICS
+
 typedef int rc_t;
-static bool rc_sub(rc_t *rc) {
-    int fetch = *rc;
-    (*rc)--;
-    return fetch > 0;
+static void rc_init(rc_t *rc) {
+    *rc = 0;
 }
-static void rc_add(rc_t *rc) {
-    (*rc)++;
+static void rc_retain(rc_t *rc) {
+    *rc++;
 }
+static bool rc_release(rc_t *rc) {
+    *rc--;
+    return *rc == 1;
+}
+
 #else
+
 #include <stdatomic.h>
+
+/*
+The relaxed/release/acquire pattern is based on:
+http://boost.org/doc/libs/1_87_0/libs/atomic/doc/html/atomic/usage_examples.html
+*/
+
 typedef atomic_int rc_t;
-static bool rc_sub(rc_t *rc) {
-    if (atomic_fetch_sub_explicit(rc, 1, __ATOMIC_RELEASE) > 0) {
-        return true;
-    }
-    atomic_thread_fence(__ATOMIC_ACQUIRE);
-    return false;
+static void rc_init(rc_t *rc) {
+    atomic_init(rc, 0);
 }
-static void rc_add(rc_t *rc) {
+static void rc_retain(rc_t *rc) {
     atomic_fetch_add_explicit(rc, 1, __ATOMIC_RELAXED);
 }
+static bool rc_release(rc_t *rc) {
+    if (atomic_fetch_sub_explicit(rc, 1, __ATOMIC_RELEASE) == 1) {
+        atomic_thread_fence(__ATOMIC_ACQUIRE);
+        return true;
+    }
+    return false;
+}
+
 #endif
 
 struct head { 
@@ -1745,6 +1753,8 @@ static struct tg_ring *series_new(const struct tg_point *points, int npoints,
     struct tg_ring *ring = tg_malloc(size+ixsize);
     if (!ring) return NULL;
     memset(ring, 0, sizeof(struct tg_ring));
+    rc_init(&ring->head.rc);
+    rc_retain(&ring->head.rc);
     ring->closed = closed;
     ring->npoints = npoints;
     ring->nsegs = nsegs;
@@ -1836,7 +1846,7 @@ struct tg_ring *tg_ring_new_ix(const struct tg_point *points, int npoints,
 /// @param ring Input ring
 /// @see RingFuncs
 void tg_ring_free(struct tg_ring *ring) {
-    if (!ring || ring->head.noheap || rc_sub(&ring->head.rc)) return;
+    if (!ring || ring->head.noheap || !rc_release(&ring->head.rc)) return;
     if (ring->ystripes) tg_free(ring->ystripes);
     tg_free(ring);
 }
@@ -1863,7 +1873,7 @@ struct tg_ring *tg_ring_clone(const struct tg_ring *ring) {
         return tg_ring_copy(ring);
     }
     struct tg_ring *ring_mut = (struct tg_ring*)ring;
-    rc_add(&ring_mut->head.rc);
+    rc_retain(&ring_mut->head.rc);
     return ring_mut;
 }
 
@@ -3325,6 +3335,8 @@ struct tg_poly *tg_poly_new(const struct tg_ring *exterior,
         goto fail;
     }
     memset(poly, 0, sizeof(struct tg_poly));
+    rc_init(&poly->head.rc);
+    rc_retain(&poly->head.rc);
     poly->head.base = BASE_POLY;
     poly->head.type = TG_POLYGON;
     poly->exterior = tg_ring_clone(exterior);
@@ -3354,7 +3366,7 @@ void tg_poly_free(struct tg_poly *poly) {
         tg_ring_free((struct tg_ring*)poly);
         return;
     }
-    if (poly->head.noheap || rc_sub(&poly->head.rc)) return;
+    if (poly->head.noheap || !rc_release(&poly->head.rc)) return;
     if (poly->exterior) tg_ring_free(poly->exterior);
     if (poly->holes) {
         for (int i = 0; i < poly->nholes; i++) {
@@ -3377,7 +3389,7 @@ struct tg_poly *tg_poly_clone(const struct tg_poly *poly) {
         return tg_poly_copy(poly);
     }
     struct tg_poly *poly_mut = (struct tg_poly*)poly;
-    rc_add(&poly_mut->head.rc);
+    rc_retain(&poly_mut->head.rc);
     return poly_mut;
 }
 
@@ -3842,6 +3854,8 @@ static struct tg_geom *geom_new(enum tg_geom_type type) {
     struct tg_geom *geom = tg_malloc(sizeof(struct tg_geom));
     if (!geom) return NULL;
     memset(geom, 0, sizeof(struct tg_geom));
+    rc_init(&geom->head.rc);
+    rc_retain(&geom->head.rc);
     geom->head.base = BASE_GEOM;
     geom->head.type = type;
     return geom;
@@ -3864,6 +3878,8 @@ struct tg_geom *tg_geom_new_point(struct tg_point point) {
     struct boxed_point *geom = tg_malloc(sizeof(struct boxed_point));
     if (!geom) return NULL;
     memset(geom, 0, sizeof(struct boxed_point));
+    rc_init(&geom->head.rc);
+    rc_retain(&geom->head.rc);
     geom->head.base = BASE_POINT;
     geom->head.type = TG_POINT;
     geom->point = point;
@@ -3871,7 +3887,7 @@ struct tg_geom *tg_geom_new_point(struct tg_point point) {
 }
 
 static void boxed_point_free(struct boxed_point *point) {
-    if (point->head.noheap || rc_sub(&point->head.rc)) return;
+    if (point->head.noheap || !rc_release(&point->head.rc)) return;
     tg_free(point);
 }
 
@@ -4625,12 +4641,12 @@ struct tg_geom *tg_geom_clone(const struct tg_geom *geom) {
         return tg_geom_copy(geom);
     }
     struct tg_geom *geom_mut = (struct tg_geom*)geom;
-    rc_add(&geom_mut->head.rc);
+    rc_retain(&geom_mut->head.rc);
     return geom_mut;
 }
 
 static void geom_free(struct tg_geom *geom) {
-    if (geom->head.noheap || rc_sub(&geom->head.rc)) return;
+    if (geom->head.noheap || !rc_release(&geom->head.rc)) return;
     switch (geom->head.type) {
     case TG_POINT:
         break;
@@ -14010,7 +14026,8 @@ struct tg_ring *tg_ring_copy(const struct tg_ring *ring) {
         return NULL;
     }
     memcpy(ring2, ring, size);
-    ring2->head.rc = 0;
+    rc_init(&ring2->head.rc);
+    rc_retain(&ring2->head.rc);
     ring2->head.noheap = 0;
     if (ring->ystripes) {
         ring2->ystripes = tg_malloc(ring->ystripes->memsz);
@@ -14054,7 +14071,8 @@ struct tg_poly *tg_poly_copy(const struct tg_poly *poly) {
     }
     memset(poly2, 0, sizeof(struct tg_poly));
     memcpy(&poly2->head, &poly->head, sizeof(struct head));
-    poly2->head.rc = 0;
+    rc_init(&poly2->head.rc);
+    rc_retain(&poly2->head.rc);
     poly2->head.noheap = 0;
     poly2->exterior = tg_ring_copy(poly->exterior);
     if (!poly2->exterior) {
@@ -14087,7 +14105,8 @@ static struct tg_geom *geom_copy(const struct tg_geom *geom) {
     }
     memset(geom2, 0, sizeof(struct tg_geom));
     memcpy(&geom2->head, &geom->head, sizeof(struct head));
-    geom2->head.rc = 0;
+    rc_init(&geom2->head.rc);
+    rc_retain(&geom2->head.rc);
     geom2->head.noheap = 0;
     switch (geom->head.type) {
     case TG_POINT:
@@ -14184,7 +14203,8 @@ static struct boxed_point *boxed_point_copy(const struct boxed_point *point) {
         return NULL;
     }
     memcpy(point2, point, sizeof(struct boxed_point));
-    point2->head.rc = 0;
+    rc_init(&point2->head.rc);
+    rc_retain(&point2->head.rc);
     point2->head.noheap = 0;
     return point2;
 }
