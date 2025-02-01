@@ -157,17 +157,17 @@ void test_wkt_basic_syntax() {
     wkt_match_err(" MULTIPOINT ( ( 1  2 ) , 3  4 ) ", "invalid text");
     wkt_match_err(" MULTIPOINT (-.4) ", "each position must have two to four numbers");
     wkt_match_err(" MULTIPOINT (-) ", "invalid text");
-    wkt_match_2(" MULTIPOINT (-.5 000.5e4) ", "MULTIPOINT(-0.5 5000)");
+    wkt_match_2(" MULTIPOINT (-.5 000.5e4) ", "MULTIPOINT(-0.5 5e3)");
     wkt_match_err(" MULTIPOINT (()) ", "invalid text");
     wkt_match_err(" MULTIPOINT ((,)) ", "invalid text");
     wkt_match_err(" MULTIPOINT ((-,)) ", "invalid text");
     wkt_match_2(" MULTIPOINT ((-1 -1)) ", "MULTIPOINT(-1 -1)");
     wkt_match_err(" MULTIPOINT (-1.) ", "invalid text");
     wkt_match_err(" MULTIPOINT (-1.000v) ", "invalid text");
-    wkt_match_2(" MULTIPOINT (1e5 2000e-2) ", "MULTIPOINT(100000 20)");
+    wkt_match_2(" MULTIPOINT (1e5 2000e-2) ", "MULTIPOINT(1e5 20)");
     wkt_match_err(" MULTIPOINT (1e) ", "invalid text");
     wkt_match_err(" MULTIPOINT (1e-) ", "invalid text");
-    wkt_match_2(" MULTIPOINT (500000000000000e-10 1) ", "MULTIPOINT(50000 1)");
+    wkt_match_2(" MULTIPOINT (500000000000000e-10 1) ", "MULTIPOINT(5e4 1)");
 
     wkt_match_2(" MULTIPOINT ( (1 2) , (2 3)) ", "MULTIPOINT(1 2,2 3)");
     wkt_match_err(" MULTIPOINT ( (1 2v ) , (2 3)) ", "invalid text");

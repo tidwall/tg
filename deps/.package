@@ -1,7 +1,7 @@
-import github.com/tidwall/json.c v1.1.7
-import github.com/tidwall/ryu v0.2.1
+import github.com/tidwall/json.c v1.1.8
+import github.com/tidwall/fp v0.1.2
 
 sum cba8cb6c700fc38902e8ddcaf0b056adad3227be  json.c
 sum 1a58747fed3daf14985bf9dea43aabea0de57c4d  json.h
-sum 47d36a9e261a02c9ca14d628f614453e4198586a  ryu.c
-sum 78b34e436ad29756dd3a2f8df9b72f6a13ecb9af  ryu.h
+sum 45445418215c415151d6edf56b271fa966e45bd0  fp.c
+sum 3be96b07d324464ac76c9478e145291af1125492  fp.h

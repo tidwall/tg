@@ -353,6 +353,7 @@ bool tg_poly_clockwise(const struct tg_poly *poly);
 void tg_env_set_allocator(void *(*malloc)(size_t), void *(*realloc)(void*, size_t), void (*free)(void*));
 void tg_env_set_index(enum tg_index ix);
 void tg_env_set_index_spread(int spread);
+void tg_env_set_print_fixed_floats(bool print);
 /// @}
 
 

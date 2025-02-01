@@ -227,12 +227,31 @@ void test_various_noheap(void) {
     
 }
 
+void test_various_fixed_floating_points(void) {
+    char a[] = "POINT(9000000 1000000)";
+    char b[] = "POINT(9e6 1e6)";
+    struct tg_geom *g = tg_parse(a, strlen(a));
+    assert(g);
+    char buf[64];
+    tg_geom_wkt(g, buf, sizeof(buf));
+    assert(strcmp(buf, b) == 0);
+    tg_geom_wkt(g, buf, sizeof(buf));
+    tg_env_set_print_fixed_floats(true);
+    tg_geom_wkt(g, buf, sizeof(buf));
+    assert(strcmp(buf, a) == 0);
+    tg_env_set_print_fixed_floats(false);
+    tg_geom_free(g);
+
+    
+}
+
 int main(int argc, char **argv) {
     do_test(test_various_imported_tests);
     do_test(test_various_issue_14);
     do_test(test_various_issue_369);
     do_test(test_various_unit_tests);
     do_test(test_various_noheap);
+    do_test(test_various_fixed_floating_points);
     return 0;
 }
 

@@ -151,8 +151,8 @@ else
     fi
     echo "For benchmarks: 'run.sh bench'"
     echo "TESTING..."
-    DEPS_SRCS="../deps/json.c ../deps/ryu.c"
-    DEPS_OBJS="json.o ryu.o"
+    DEPS_SRCS="../deps/json.c ../deps/fp.c"
+    DEPS_OBJS="json.o fp.o"
     rm -f tg.o $DEPS_OBJS
     for f in *; do 
         if [[ "$f" != test_*.c ]]; then continue; fi 
