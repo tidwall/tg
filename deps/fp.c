@@ -2017,7 +2017,7 @@ static inline float int32Bits2Float(uint32_t bits) {
     return f;
 }
 
-enum RyuStatus s2f_n(const char * buffer, const int len, float * result) {
+static enum RyuStatus s2f_n(const char * buffer, const int len, float * result){
     if (len == 0) {
         return RYU_INPUT_TOO_SHORT;
     }
@@ -2217,12 +2217,12 @@ struct fp_writer {
     size_t count;
 };
 
-static void write_nullterm(struct fp_writer *wr) {
+static void fp_write_nullterm(struct fp_writer *wr) {
     if (wr->n > wr->count) wr->dst[wr->count] = '\0';
     else if (wr->n > 0) wr->dst[wr->n-1] = '\0';
 }
 
-static void write_char(struct fp_writer *wr, char b) {
+static void fp_write_char(struct fp_writer *wr, char b) {
     if (wr->count < wr->n) wr->dst[wr->count] = b;
     wr->count++;
 }
@@ -2239,7 +2239,7 @@ struct fp_info {
 /// This is compatible with JSON, WKT, and general numerical values.
 /// This does not convert the data into a number.
 /// It only get basic information for validation and later parsing.
-struct fp_info fp_parse(const char *data, size_t len) {
+FP_EXTERN struct fp_info fp_parse(const char *data, size_t len) {
     size_t i = 0;
     bool sign = false;
     size_t frac = 0;
@@ -2366,7 +2366,7 @@ static size_t fp_utoa(union fpoint fpoint, int bits, char fmt,
     bool neg = false;
     char *p = buf;
     if (p[0] == '-') {
-        write_char(&wr, '-');
+        fp_write_char(&wr, '-');
         p++;
         neg = true;
     }
@@ -2386,50 +2386,50 @@ static size_t fp_utoa(union fpoint fpoint, int bits, char fmt,
         } else {
             *p = '\0';
         }
-        while (*p) write_char(&wr, *(p++));
-        write_nullterm(&wr);
+        while (*p) fp_write_char(&wr, *(p++));
+        fp_write_nullterm(&wr);
         return wr.count;
     }
     if (!f) {
         *e = '\0';
-        while (*p) write_char(&wr, *(p++));
-        write_char(&wr, ech);
+        while (*p) fp_write_char(&wr, *(p++));
+        fp_write_char(&wr, ech);
         p++;
-        if (j && *p != '-') write_char(&wr, '+');
-        while (*p) write_char(&wr, *(p++));
-        write_nullterm(&wr);
+        if (j && *p != '-') fp_write_char(&wr, '+');
+        while (*p) fp_write_char(&wr, *(p++));
+        fp_write_nullterm(&wr);
         return wr.count;
     }
     int en = atoi(e+1);
     *e = '\0';
     if (en < 0) {
-        write_char(&wr, '0');
-        write_char(&wr, '.');
+        fp_write_char(&wr, '0');
+        fp_write_char(&wr, '.');
         en = -en;
         for (int i = 0; i < en-1; i++) {
-            write_char(&wr, '0');
+            fp_write_char(&wr, '0');
         }
-        write_char(&wr, *(p++));
+        fp_write_char(&wr, *(p++));
         if (*p) {
             p++;
-            while (*p) write_char(&wr, *(p++));
+            while (*p) fp_write_char(&wr, *(p++));
         }
     } else {
-        write_char(&wr, *(p++));
+        fp_write_char(&wr, *(p++));
         if (*p) p++;
         for (int i = 0; i < en; i++) {
             if (*p) {
-                write_char(&wr, *(p++));
+                fp_write_char(&wr, *(p++));
             } else {
-                write_char(&wr, '0');
+                fp_write_char(&wr, '0');
             }
         }
         if (*p && !(*p == '0' && *(p+1) == '\0')) {
-            write_char(&wr, '.');
-            while (*p) write_char(&wr, *(p++));
+            fp_write_char(&wr, '.');
+            while (*p) fp_write_char(&wr, *(p++));
         }
     }
-    write_nullterm(&wr);
+    fp_write_nullterm(&wr);
     if (g) {
         bool rewrite = false;
         if (j) {
@@ -2442,12 +2442,12 @@ static size_t fp_utoa(union fpoint fpoint, int bits, char fmt,
             wr = (struct fp_writer){ .dst = (uint8_t*)dst, .n = nbytes };
             p = buf;
             *e = '\0';
-            while (*p) write_char(&wr, *(p++));
-            write_char(&wr, ech);
+            while (*p) fp_write_char(&wr, *(p++));
+            fp_write_char(&wr, ech);
             p++;
-            if (j && *p != '-') write_char(&wr, '+');
-            while (*p) write_char(&wr, *(p++));
-            write_nullterm(&wr);
+            if (j && *p != '-') fp_write_char(&wr, '+');
+            while (*p) fp_write_char(&wr, *(p++));
+            fp_write_nullterm(&wr);
         }
     }
     return wr.count;

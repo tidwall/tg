@@ -430,6 +430,7 @@ Functions for optionally setting the behavior of the TG environment. These, if d
 - [tg_env_set_allocator()](#group___global_funcs_1gab1e1478a3870e90d6b5932f5e67a032b)
 - [tg_env_set_index()](#group___global_funcs_1ga57a922edb770400033043354c1f4e80e)
 - [tg_env_set_index_spread()](#group___global_funcs_1gaf9e9214a8db08c306fdb529192e9dd5f)
+- [tg_env_set_print_fixed_floats()](#group___global_funcs_1gad9af7b45fd9c942f857b1121168f1600)
 
 <a name='structtg__point'></a>
 ## tg_point
@@ -4939,6 +4940,14 @@ This is a global override to the indexing spread for all yet-to-be created geome
 - [About TG indexing](POLYGON_INDEXING.md)
 - [Global environment](#group___global_funcs)
 
+
+
+<a name='group___global_funcs_1gad9af7b45fd9c942f857b1121168f1600'></a>
+## tg_env_set_print_fixed_floats()
+```c
+void tg_env_set_print_fixed_floats(bool print);
+```
+Set the floating point printing to be fixed size. By default floating points are printed using their smallest textual representation. Such as 800000 is converted to "8e5". This is ideal when both accuracy and size are desired. But there may be times when only fixed epresentations are wanted, in that case set this param to true. 
 
 
 ***

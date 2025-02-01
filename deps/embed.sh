@@ -31,7 +31,7 @@ embed() {
 
 # embed these files
 embed json.c
-embed ryu.c
+embed fp.c
 
 # overwrite the original source file
 mv tmp.1 $SOURCE_FILE

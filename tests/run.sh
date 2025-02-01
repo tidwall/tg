@@ -199,6 +199,16 @@ else
             ./$f.test $@
         fi
     done
+
+    # test that TG_STATIC has no externs
+    externs="$(gcc-14 -DTG_STATIC -c ../tg.c && \
+        nm -g tg.o | grep ' T ' | wc -l | xargs)"
+    if [[ "$externs" != "0" ]]; then
+        echo TG_STATIC returned externs
+        nm -g tg.o | grep ' T '
+        exit
+    fi
+
     OK=1
     echo "OK"
 

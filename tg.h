@@ -78,7 +78,7 @@ enum tg_index {
 struct tg_geom *tg_geom_new_point(struct tg_point point);
 struct tg_geom *tg_geom_new_linestring(const struct tg_line *line);
 struct tg_geom *tg_geom_new_polygon(const struct tg_poly *poly);
-struct tg_geom *tg_geom_new_multipoint(const struct tg_point *points, int npoints);
+struct tg_geom *tg_geom_new_multipoint(const struct tg_point *points,int npoints);
 struct tg_geom *tg_geom_new_multilinestring(const struct tg_line *const lines[], int nlines);
 struct tg_geom *tg_geom_new_multipolygon(const struct tg_poly *const polys[], int npolys);
 struct tg_geom *tg_geom_new_geometrycollection(const struct tg_geom *const geoms[], int ngeoms);
@@ -355,6 +355,5 @@ void tg_env_set_index(enum tg_index ix);
 void tg_env_set_index_spread(int spread);
 void tg_env_set_print_fixed_floats(bool print);
 /// @}
-
 
 #endif // TG_H
