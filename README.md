@@ -6,7 +6,7 @@
 </p>
 
 TG is a geometry library for C that is small, fast, and easy to use.
-I designed it for programs that need real-time geospatial, such as geofencing, monitoring, and streaming analysis.
+It's designed for programs that need real-time geospatial, such as geofencing, monitoring, and streaming analysis.
 
 ## Features
 
