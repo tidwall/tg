@@ -1433,12 +1433,12 @@ struct ystripe {
     int *indexes;
 };
 
-struct buf {
+struct tg_buf {
     uint8_t *data;
     size_t len, cap;
 };
 
-static bool buf_ensure(struct buf *buf, size_t len) {
+static bool tg_buf_ensure(struct tg_buf *buf, size_t len) {
     if (buf->cap-buf->len >= len) return true;
     size_t cap = buf->cap;
     do {
@@ -1452,22 +1452,24 @@ static bool buf_ensure(struct buf *buf, size_t len) {
     return true;
 }
 
-// buf_append_byte append byte to buffer. 
+// tg_buf_append_byte append byte to buffer. 
 // The buf->len should be greater than before, otherwise out of memory.
-static bool buf_append_byte(struct buf *buf, uint8_t b) {
-    if (!buf_ensure(buf, 1)) return false;
+static bool tg_buf_append_byte(struct tg_buf *buf, uint8_t b) {
+    if (!tg_buf_ensure(buf, 1)) return false;
     buf->data[buf->len++] = b;
     return true;
 }
 
-static bool buf_append_bytes(struct buf *buf, uint8_t *bytes, size_t nbytes) {
-    if (!buf_ensure(buf, nbytes)) return false;
+static bool tg_buf_append_bytes(struct tg_buf *buf, uint8_t *bytes,
+    size_t nbytes)
+{
+    if (!tg_buf_ensure(buf, nbytes)) return false;
     memcpy(buf->data+buf->len, bytes, nbytes);
     buf->len += nbytes;
     return true;
 }
 
-static bool buf_trunc(struct buf *buf) {
+static bool tg_buf_trunc(struct tg_buf *buf) {
     if (buf->cap-buf->len > 8) {
         uint8_t *data = tg_realloc(buf->data, buf->len);
         if (!data) return false;
@@ -7837,14 +7839,14 @@ const char *tg_geom_error(const struct tg_geom *geom) {
     return (geom->head.flags&IS_ERROR) == IS_ERROR ? geom->error : NULL;
 }
 
-static bool buf_append_json_pair(struct buf *buf, struct json key, 
+static bool buf_append_json_pair(struct tg_buf *buf, struct json key, 
     struct json val)
 {
     size_t len = buf->len;
-    if (!buf_append_byte(buf, buf->len == 0 ? '{' : ',') ||
-        !buf_append_bytes(buf, (uint8_t*)json_raw(key), json_raw_length(key)) || 
-        !buf_append_byte(buf, ':') || 
-        !buf_append_bytes(buf, (uint8_t*)json_raw(val), json_raw_length(val)))
+    if (!tg_buf_append_byte(buf, buf->len == 0 ? '{' : ',') ||
+        !tg_buf_append_bytes(buf, (uint8_t*)json_raw(key), json_raw_length(key)) || 
+        !tg_buf_append_byte(buf, ':') || 
+        !tg_buf_append_bytes(buf, (uint8_t*)json_raw(val), json_raw_length(val)))
     {
         buf->len = len;
         return false;
@@ -7863,7 +7865,7 @@ static const char *take_basic_geojson(struct json json,
     bool ok = false;
     bool has_props = false;
     bool has_id = false;
-    struct buf extra = { 0 };
+    struct tg_buf extra = { 0 };
     struct json target = { 0 };
     struct json key = json_first(json);
     struct json val = json_next(key);
@@ -7958,9 +7960,9 @@ static const char *take_basic_geojson(struct json json,
         flags |= IS_EMPTY;
     }
     if (extra.len > 0) {
-        if (!buf_append_byte(&extra, '}')) goto fail;
-        if (!buf_append_byte(&extra, '\0')) goto fail;
-        if (!buf_trunc(&extra)) goto fail;
+        if (!tg_buf_append_byte(&extra, '}')) goto fail;
+        if (!tg_buf_append_byte(&extra, '\0')) goto fail;
+        if (!tg_buf_trunc(&extra)) goto fail;
     }
     ok = true;
 fail:
@@ -8503,7 +8505,7 @@ static struct tg_geom *parse_geojson_geometrycollection(struct json json,
 
 static struct tg_geom *parse_geojson_feature(struct json json, enum tg_index ix)
 {
-    struct buf combined = { 0 };
+    struct tg_buf combined = { 0 };
     PARSE_GEOJSON_BASIC_HEAD("geometry")
     if ((flags&IS_EMPTY) == IS_EMPTY) {
         geom = tg_geom_new_point_empty();
@@ -8529,20 +8531,20 @@ static struct tg_geom *parse_geojson_feature(struct json json, enum tg_index ix)
         // combine the two together as '[feature-extra,geometry-extra]'
         size_t xn0 = extra ? strlen(extra) : 0;
         size_t xn1 = strlen(geom->xjson);
-        if (!buf_append_byte(&combined, '[') || 
-            !buf_append_bytes(&combined, 
+        if (!tg_buf_append_byte(&combined, '[') || 
+            !tg_buf_append_bytes(&combined, 
                 (uint8_t*)(xn0 ? extra : "{}"), (xn0 ? xn0 : 2)) ||
-            !buf_append_byte(&combined, ',') || 
-            !buf_append_bytes(&combined, (uint8_t*)geom->xjson, xn1) ||
-            !buf_append_byte(&combined, ']') ||
-            !buf_append_byte(&combined, '\0'))
+            !tg_buf_append_byte(&combined, ',') || 
+            !tg_buf_append_bytes(&combined, (uint8_t*)geom->xjson, xn1) ||
+            !tg_buf_append_byte(&combined, ']') ||
+            !tg_buf_append_byte(&combined, '\0'))
         { goto fail; }
-        if (!buf_trunc(&combined)) goto fail;
+        if (!tg_buf_trunc(&combined)) goto fail;
         if (geom->xjson) tg_free(geom->xjson);
         geom->xjson = NULL;
         if (extra) tg_free(extra);
         extra = (char*)combined.data;
-        combined = (struct buf) { 0 };
+        combined = (struct tg_buf) { 0 };
     }
         
     PARSE_GEOJSON_BASIC_TAIL({
