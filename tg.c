@@ -13321,6 +13321,14 @@ static const char *wkb_invalid_err(void) {
 
 #define PARSE_FAIL SIZE_MAX
 
+static bool wkb_is_aligned(const void *ptr)
+{
+#if defined(__x86_64__) || defined(__aarch64__)
+    return true;
+#endif
+    return (uintptr_t)ptr % sizeof(double) == 0;
+}
+
 // returns the updated wkb index.
 static size_t parse_wkb_posns(enum base base, int dims, 
     const uint8_t *wkb, size_t len, size_t i, bool swap,
@@ -13333,7 +13341,7 @@ static size_t parse_wkb_posns(enum base base, int dims,
     uint32_t count;
     read_uint32(count);
     if (count == 0) return i;
-    if (dims == 2 && !swap && len-i >= count*2*8) {
+    if (dims == 2 && !swap && len-i >= count*2*8 && wkb_is_aligned(wkb+i)) {
         // Use the point data directly. No allocations. 
         *points = (void*)(wkb+i);
         *npoints = count;
