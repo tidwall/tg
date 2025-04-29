@@ -403,8 +403,6 @@ TG_EXTERN bool tg_segment_intersects_segment(struct tg_segment a,
 TG_EXTERN bool tg_poly_covers_xy(const struct tg_poly *a, double x, double y);
 TG_EXTERN bool tg_poly_touches_line(const struct tg_poly *a,
     const struct tg_line *b);
-TG_EXTERN bool tg_poly_coveredby_poly(const struct tg_poly *a,
-    const struct tg_poly *b);
 TG_EXTERN bool tg_poly_covers_point(const struct tg_poly *a, struct tg_point b);
 TG_EXTERN bool tg_poly_covers_rect(const struct tg_poly *a, struct tg_rect b);
 TG_EXTERN bool tg_poly_covers_line(const struct tg_poly *a,
@@ -15448,7 +15446,6 @@ void tg_geom_setnoheap(struct tg_geom *geom) {
 /// Parse GeoBIN binary using provided indexing option.
 /// @param geobin GeoBIN data
 /// @param len Length of data
-/// @param ix Indexing option, e.g. TG_NONE, TG_NATURAL, TG_YSTRIPES
 /// @returns A geometry or an error. Use tg_geom_error() after parsing to check
 /// for errors. 
 /// @see tg_parse_geobin_ix()
