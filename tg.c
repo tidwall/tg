@@ -1694,8 +1694,8 @@ static bool process_ystripes(struct tg_ring *ring) {
         double ymax = fmax0(ring->points[i].y, ring->points[i+1].y);
         int min = (ymin - ring->rect.min.y) / height * (double)nstripes;
         int max = (ymax - ring->rect.min.y) / height * (double)nstripes;
-        min = fmax0(min, 0);
         max = fmin0(max, nstripes-1);
+        min = fmin0(fmax0(min, 0), max);
         for (int j = min; j <= max; j++) {
             ycounts[j]++;
             nmap++;
@@ -1727,8 +1727,8 @@ static bool process_ystripes(struct tg_ring *ring) {
         double ymax = fmax0(ring->points[i].y, ring->points[i+1].y);
         int min = (ymin - ring->rect.min.y) / height * (double)nstripes;
         int max = (ymax - ring->rect.min.y) / height * (double)nstripes;
-        min = fmax0(min, 0);
         max = fmin0(max, nstripes-1);
+        min = fmin0(fmax0(min, 0), max);
         for (int j = min; j <= max; j++) {
             struct ystripe *stripe = &ystripes->stripes[j];
             stripe->indexes[stripe->count++] = i;
