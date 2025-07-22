@@ -626,11 +626,62 @@ void test_index_chaos(void) {
 
 }
 
+void test_index_ystripes_top_edge() {
+    int npoints = 4 + 100 + 1; // +1 for closing point
+    struct tg_point *points = malloc(npoints * sizeof(struct tg_point));
+    assert(points);
+    
+    int idx = 0;
+    // Start with the basic square: bottom-left, bottom-right, top-right, top-left
+    points[idx++] = P(0.0, 0.0);  // bottom-left
+    points[idx++] = P(1.0, 0.0);  // bottom-right
+    points[idx++] = P(1.0, 1.0);  // top-right
+    points[idx++] = P(0.0, 1.0);  // top-left
+    
+    // Add 100 points along the left edge from (0, 1.0) down to (0, 0.0)
+    for (int i = 99; i >= 0; i--) {
+        double y = (double)i / 100.0;
+        points[idx++] = P(0.0, y);
+    }
+    
+    // Close the polygon
+    points[idx++] = P(0.0, 0.0);
+    assert(idx == npoints);
+    
+    // Create rings with different indexing
+    struct tg_ring *ring_default = tg_ring_new_ix(points, npoints, TG_DEFAULT);
+    struct tg_ring *ring_ystripes = tg_ring_new_ix(points, npoints, TG_YSTRIPES);
+    struct tg_poly *poly_default = (struct tg_poly*)ring_default;
+    struct tg_poly *poly_ystripes = (struct tg_poly*)ring_ystripes;
+    
+    // Test point on the top edge
+    struct tg_point point_top = P(0.5, 1.0);
+    assert(tg_poly_intersects_point(poly_default, point_top) == true);
+    assert(tg_poly_intersects_point(poly_ystripes, point_top) == true);
+    
+    // Test other edges for completeness
+    struct tg_point point_bottom = P(0.5, 0.0);
+    struct tg_point point_left = P(0.0, 0.5);
+    struct tg_point point_right = P(1.0, 0.5);
+    
+    assert(tg_poly_intersects_point(poly_default, point_bottom) == 
+           tg_poly_intersects_point(poly_ystripes, point_bottom));
+    assert(tg_poly_intersects_point(poly_default, point_left) == 
+           tg_poly_intersects_point(poly_ystripes, point_left));
+    assert(tg_poly_intersects_point(poly_default, point_right) == 
+           tg_poly_intersects_point(poly_ystripes, point_right));
+    
+    free(points);
+    tg_ring_free(ring_default);
+    tg_ring_free(ring_ystripes);
+}
+
 int main(int argc, char **argv) {
     do_test(test_index_pip_concave);
     do_test(test_index_pip_circle);
     do_test(test_index_segments);
     do_test(test_index_ystripes_circle);
+    do_test(test_index_ystripes_top_edge);
     do_test(test_index_svg);
     do_test(test_index_defaults);
     do_test(test_index_multi);
