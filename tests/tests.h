@@ -9,6 +9,9 @@
 #include <time.h>
 #include <assert.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "../tg.h"
 
 #define P(x, y) ((struct tg_point){(x), (y)})
