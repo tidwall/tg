@@ -13281,21 +13281,19 @@ static const char *wkb_invalid_child_type(void) {
 }
 
 static uint32_t read_uint32(const uint8_t *data, bool swap) {
-    uint32_t x = (((uint32_t)data[0])<<0)|(((uint32_t)data[1])<<8)|
-                 (((uint32_t)data[2])<<16)|(((uint32_t)data[3])<<24);
+    uint32_t x;
+    memcpy(&x, data, sizeof(uint32_t));
     return swap ? __builtin_bswap32(x) : x;
 }
 
 static uint64_t read_uint64(const uint8_t *data, bool swap) {
-    uint64_t x = (((uint64_t)data[0])<<0)|(((uint64_t)data[1])<<8)|
-                 (((uint64_t)data[2])<<16)|(((uint64_t)data[3])<<24)|
-                 (((uint64_t)data[4])<<32)|(((uint64_t)data[5])<<40)|
-                 (((uint64_t)data[6])<<48)|(((uint64_t)data[7])<<56);
+    uint64_t x;
+    memcpy(&x, data, sizeof(uint64_t));
     return swap ? __builtin_bswap64(x) : x;
 }
 
-static double read_double(const uint8_t *data, bool le) {
-    return ((union raw_double){.u=read_uint64(data, le)}).d;
+static double read_double(const uint8_t *data, bool swap) {
+    return ((union raw_double){.u=read_uint64(data, swap)}).d;
 }
 
 #define read_uint32(name) { \
