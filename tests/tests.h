@@ -224,12 +224,40 @@ int tg_geom_multi_index_level_num_rects(const struct tg_geom *geom, int levelidx
 struct tg_rect tg_geom_multi_index_level_rect(const struct tg_geom *geom, int levelidx, int rectidx);
 uint32_t tg_point_hilbert(struct tg_point point, struct tg_rect rect);
 
+
+#if defined(_WIN32) && !defined(__MSYS__) && !defined(__CYGWIN__)
+// #define _WIN32_WINNT 0x0600
+#include <windows.h>
+#include <bcrypt.h>
+#include <unistd.h>
+// #pragma comment(lib, "bcrypt.lib")
+int mkdir0(const char *path) {
+    return mkdir(path);
+}
+#else
+int mkdir0(const char *path) {
+    return mkdir(path, 0700);
+}
+#endif
+
+static int readrandom(void *buf, size_t len) {
+#if defined(_WIN32) && !defined(__MSYS__) && !defined(__CYGWIN__)
+    NTSTATUS status = BCryptGenRandom(NULL, buf, (ULONG)len,
+        BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    return (status == 0) ? 0 : -1;
+#else
+    FILE *f = fopen("/dev/urandom", "rb");
+    if (!f) return -1;
+    size_t n = fread(buf, 1, len, f);
+    fclose(f);
+    return (n == len) ? 0 : -1;
+#endif
+}
+
 uint64_t mkrandseed(void) {
     uint64_t seed = 0;
-    FILE *urandom = fopen("/dev/urandom", "r");
-    assert(urandom);
-    assert(fread(&seed, sizeof(uint64_t), 1, urandom));
-    fclose(urandom);
+    int ret = readrandom(&seed, 8);
+    assert(ret == 0);
     return seed;
 }
 

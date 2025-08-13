@@ -322,7 +322,7 @@ void write_geom_multi_index_svg(const struct tg_geom *geom, char *path, enum svg
 
 
 void test_index_svg() {
-    mkdir("svg", 0700);
+    mkdir0("svg");
     char *states[] = { "tx", "az", "ri", "br", "bc" };
     for (size_t i = 0; i < sizeof(states)/sizeof(char*); i++) {
         struct tg_ring *ring_nat = (void*)gc_geom(load_geom(states[i], TG_NATURAL));

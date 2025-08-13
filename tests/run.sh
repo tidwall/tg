@@ -97,6 +97,12 @@ if [[ "$CC" == "emcc" ]]; then
     CFLAGS="$CFLAGS -O3" # needs optimizations for test_wkb_max_depth test
 fi
 
+LIBS=-lm
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+    echo "Running on Windows via MSYS2/Cygwin"
+    LIBS="$LIBS -lbcrypt"
+fi
+
 CC=${CC:-cc}
 echo "CC: $CC"
 echo "CFLAGS: $CFLAGS"
@@ -131,11 +137,11 @@ fi
 if [[ "$1" == "bench" ]]; then
     echo "BENCHMARKING..."
     if [[ "$MARKDOWN" == "1" ]]; then
-        echo_wrapped $CC $CFLAGS bmalloc.c ../tg.c bench.c -lm $GEOS_FLAGS
+        echo_wrapped $CC $CFLAGS bmalloc.c ../tg.c bench.c $LIBS $GEOS_FLAGS
     else
-        echo $CC $CFLAGS bmalloc.c ../tg.c bench.c -lm $GEOS_FLAGS
+        echo $CC $CFLAGS bmalloc.c ../tg.c bench.c $LIBS $GEOS_FLAGS
     fi
-    $CC $CFLAGS bmalloc.c ../tg.c bench.c -lm $GEOS_FLAGS
+    $CC $CFLAGS bmalloc.c ../tg.c bench.c $LIBS $GEOS_FLAGS
     ./a.out $@
     OK=1
 elif [[ "$1" == "fuzz" ]]; then
@@ -181,9 +187,11 @@ else
             fi
         fi
         if [[ "$AMALGA" == "1" ]]; then
-            $CC $CFLAGS -o $f.test tg.o -lm $f
+            # echo $CC $CFLAGS -o $f.test tg.o $LIBS $f
+            $CC $CFLAGS -o $f.test tg.o $LIBS $f
         else
-            $CC $CFLAGS -DTG_NOAMALGA -o $f.test tg.o $DEPS_OBJS -lm $f
+            # echo $CC $CFLAGS -DTG_NOAMALGA $f tg.o $DEPS_OBJS  -o $f.test $LIBS
+            $CC $CFLAGS -DTG_NOAMALGA $f tg.o $DEPS_OBJS  -o $f.test $LIBS
         fi
         if [[ "$WITHSANS" == "1" ]]; then
             export MallocNanoZone=0
