@@ -582,7 +582,7 @@ static bool rc_release(rc_t *rc) {
 
 struct head { 
     rc_t rc;
-    bool noheap;
+    unsigned noheap:1;
     enum base base:4;
     enum tg_geom_type type:4;
     enum flags flags:8;
