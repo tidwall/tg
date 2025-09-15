@@ -34,11 +34,13 @@ struct tg_rect {
     struct tg_point min;
     struct tg_point max;
 };
+typedef struct tg_rect tg_rect;
 
 struct tg_line;  ///< Find the description in the tg.c file.
 struct tg_ring;  ///< Find the description in the tg.c file.
 struct tg_poly;  ///< Find the description in the tg.c file.
 struct tg_geom;  ///< Find the description in the tg.c file.
+typedef struct tg_geom tg_geom; // Add typedef for opaque struct
 
 /// Geometry types.
 ///
