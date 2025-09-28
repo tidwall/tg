@@ -2473,7 +2473,7 @@ static size_t fp_utoa(union fpoint fpoint, int bits, char fmt,
 ///
 /// Returns the number of characters, not including the null-terminator, needed
 /// to store the double into the C string buffer.
-/// If the returned length is greater than nbytes-1, then only a parital copy
+/// If the returned length is greater than nbytes-1, then only a partial copy
 /// occurred.
 /// 
 /// The format is one of 
@@ -2493,7 +2493,7 @@ FP_EXTERN size_t fp_dtoa(double d, char fmt, char dst[], size_t n) {
 ///
 /// Returns the number of characters, not including the null-terminator, needed
 /// to store the float into the C string buffer.
-/// If the returned length is greater than nbytes-1, then only a parital copy
+/// If the returned length is greater than nbytes-1, then only a partial copy
 /// occurred.
 /// 
 /// The format is one of 

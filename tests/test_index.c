@@ -390,7 +390,7 @@ void test_index_ystripes_circle(void) {
         }
     }
     if (hits < 7700 || hits > 8000) {
-        fprintf(stderr, "exected between 7700-8000, got: %d\n", hits);
+        fprintf(stderr, "expected between 7700-8000, got: %d\n", hits);
         assert(0);
     }
     free(points);

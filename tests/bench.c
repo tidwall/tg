@@ -127,7 +127,7 @@ static void bench_step_geos(
 
     GEOSContextHandle_t handle = GEOS_init_r();
 
-    // convers rand tg points into geos points
+    // converts rand tg points into geos points
     GEOSGeometry **rgeoms = malloc(N*sizeof(GEOSGeometry *));
     assert(rgeoms);
     memset(rgeoms, 0, N*sizeof(GEOSGeometry *));
@@ -392,7 +392,7 @@ void intersects_bench(const char *name, int runs, const struct tg_point points[]
     // create a rect from the incoming points.
     struct tg_rect rect = rect_from_points(points, npoints);
 
-    // create random segments that are conatined in or intersecting the rect.
+    // create random segments that are contained in or intersecting the rect.
     struct tg_segment *rsegs = make_random_segments(rect, N);
 
     bench_run(runs, name, "tg", "none", points, npoints, 0, rsegs, N);
@@ -558,7 +558,7 @@ void main_intersects_bench(uint64_t seed, int runs) {
     print_start_bold();
     printf("== Line intersect ==");
     print_end_bold();
-    printf("Benchmark line interecting polygon operation for 10K random line\n"
+    printf("Benchmark line intersecting polygon operation for 10K random line\n"
            "segments that are each no larger than %d%% the width of the polygon\n"
            "and are within the polygon's MBR plus an extra %.0f%% padding.\n",
            NUM_RAND_SEGMENTS/1000, MBR_PAD*100.0);

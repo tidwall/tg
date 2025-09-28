@@ -686,7 +686,7 @@ struct multi {
 /// LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, or 
 /// GeometryCollection. 
 /// 
-/// For geometries that are derived from GeoJSON, they may have addtional 
+/// For geometries that are derived from GeoJSON, they may have additional 
 /// attributes such as being a Feature or a FeatureCollection; or include
 /// extra json fields.
 ///
@@ -732,7 +732,7 @@ struct tg_geom {
             double m;
         };
         struct {  // !TG_POINT
-            double *coords; // extra dimensinal coordinates
+            double *coords; // extra dimensional coordinates
             int ncoords;
         };
     };
@@ -2000,7 +2000,7 @@ static struct tg_rect process_points(const struct tg_point *points,
     // - Wrapped is the remaining loop steps, up to three.
     //
     // Finally, there is a Convex and Concave section.
-    // - Convex is the initial state. Each step will do some calcuations until
+    // - Convex is the initial state. Each step will do some calculations until
     //   it is determined if the ring is concave. Once it's known to be concave
     //   the code jumps to the Concave section.
     // - Concave section is just like the Convex section, but there is no
@@ -2332,7 +2332,7 @@ int tg_ring_num_points(const struct tg_ring *ring) {
 
 /// Returns the minimum bounding rectangle of a rect.
 /// @param ring Input ring
-/// @returns Minimum bounding retangle
+/// @returns Minimum bounding rectangle
 /// @see RingFuncs
 struct tg_rect tg_ring_rect(const struct tg_ring *ring) {
     if (!ring) return (struct tg_rect){ 0 };
@@ -2564,7 +2564,7 @@ static bool ring_ring_ix(const struct tg_ring *a, int alvl, int aidx,
 }
 
 /// Iterates over all segments in ring A that intersect with segments in ring B.
-/// @note This efficently uses the indexes of each geometry, if available.
+/// @note This efficiently uses the indexes of each geometry, if available.
 /// @see RingFuncs
 void tg_ring_ring_search(const struct tg_ring *a, const struct tg_ring *b, 
     bool (*iter)(struct tg_segment aseg, int aidx, struct tg_segment bseg, 
@@ -2617,7 +2617,7 @@ void tg_ring_ring_search(const struct tg_ring *a, const struct tg_ring *b,
 }
 
 /// Iterates over all segments in line A that intersect with segments in line B.
-/// @note This efficently uses the indexes of each geometry, if available.
+/// @note This efficiently uses the indexes of each geometry, if available.
 /// @see LineFuncs
 void tg_line_line_search(const struct tg_line *a, const struct tg_line *b, 
     bool (*iter)(struct tg_segment aseg, int aidx, struct tg_segment bseg, 
@@ -2628,7 +2628,7 @@ void tg_line_line_search(const struct tg_line *a, const struct tg_line *b,
 }
 
 /// Iterates over all segments in ring A that intersect with segments in line B.
-/// @note This efficently uses the indexes of each geometry, if available.
+/// @note This efficiently uses the indexes of each geometry, if available.
 /// @see RingFuncs
 void tg_ring_line_search(const struct tg_ring *a, const struct tg_line *b, 
     bool (*iter)(struct tg_segment aseg, int aidx, struct tg_segment bseg, 
@@ -3596,7 +3596,7 @@ bool tg_line_covers_poly(const struct tg_line *line,
     struct tg_rect rect = tg_poly_rect(poly);
     if (rect.min.x != rect.max.x && rect.min.y != rect.max.y) return false;
     
-    // polygon can fit in a straight (vertial or horizontal) line
+    // polygon can fit in a straight (vertical or horizontal) line
     struct tg_segment seg = { rect.min, rect.max };
     struct tg_ring *other = stack_ring();
     segment_to_ring(seg, other);
@@ -5193,7 +5193,7 @@ static struct tg_rect geom_rect(const struct tg_geom *geom) {
 
 /// Returns the minimum bounding rectangle of a geometry.
 /// @param geom Input geometry
-/// @return Minumum bounding rectangle
+/// @return Minimum bounding rectangle
 /// @see tg_rect
 /// @see GeometryAccessors
 struct tg_rect tg_geom_rect(const struct tg_geom *geom) {
@@ -6552,7 +6552,7 @@ bool tg_geom_intersects_xy(const struct tg_geom *a, double x, double y) {
 /// @param geom Input geometry
 /// @return Array of coordinates
 /// @return NULL if there are no extra coordinates 
-/// @note These are the raw coodinates provided by a constructor like 
+/// @note These are the raw coordinates provided by a constructor like 
 /// tg_geom_new_polygon_z() or from a parsed source like WKT "POLYGON Z ...".
 /// @see tg_geom_num_extra_coords()
 const double *tg_geom_extra_coords(const struct tg_geom *geom) {
@@ -6603,7 +6603,7 @@ bool tg_geom_has_m(const struct tg_geom *geom) {
 
 /// Get the Z coordinate of a Point geometry.
 /// @param geom Input geometry
-/// @return For a TG_POINT geometry, returns the Z coodinate.
+/// @return For a TG_POINT geometry, returns the Z coordinate.
 /// @return For everything else returns zero.
 double tg_geom_z(const struct tg_geom *geom) {
     if (!geom || geom->head.base != BASE_GEOM || geom->head.type != TG_POINT) {
@@ -6614,7 +6614,7 @@ double tg_geom_z(const struct tg_geom *geom) {
 
 /// Get the M coordinate of a Point geometry.
 /// @param geom Input geometry
-/// @return For a TG_POINT geometry, returns the M coodinate.
+/// @return For a TG_POINT geometry, returns the M coordinate.
 /// @return For everything else returns zero.
 double tg_geom_m(const struct tg_geom *geom) {
     if (!geom || geom->head.base != BASE_GEOM || geom->head.type != TG_POINT) {
@@ -8640,7 +8640,7 @@ struct tg_geom *tg_parse_geojsonn(const char *geojson, size_t len) {
 ///
 /// Supports [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946) standard,
 /// including Features, FeaturesCollection, ZM coordinates, properties, and
-/// arbritary JSON members.
+/// arbitrary JSON members.
 /// @param geojson A geojson string. Must be UTF8 and null-terminated.
 /// @returns A geometry or an error. Use tg_geom_error() after parsing to check
 /// for errors. 
@@ -11243,7 +11243,7 @@ static size_t fp_utoa(union fpoint fpoint, int bits, char fmt,
 ///
 /// Returns the number of characters, not including the null-terminator, needed
 /// to store the double into the C string buffer.
-/// If the returned length is greater than nbytes-1, then only a parital copy
+/// If the returned length is greater than nbytes-1, then only a partial copy
 /// occurred.
 /// 
 /// The format is one of 
@@ -11263,7 +11263,7 @@ FP_EXTERN size_t fp_dtoa(double d, char fmt, char dst[], size_t n) {
 ///
 /// Returns the number of characters, not including the null-terminator, needed
 /// to store the float into the C string buffer.
-/// If the returned length is greater than nbytes-1, then only a parital copy
+/// If the returned length is greater than nbytes-1, then only a partial copy
 /// occurred.
 /// 
 /// The format is one of 
@@ -11876,7 +11876,7 @@ static void write_geom_geojson(const struct tg_geom *geom, struct writer *wr) {
 /// @param n Maximum number of bytes to be used in the buffer.
 /// @return  The number of characters, not including the null-terminator, 
 /// needed to store the content into the C string buffer.
-/// If the returned length is greater than n-1, then only a parital copy
+/// If the returned length is greater than n-1, then only a partial copy
 /// occurred, for example:
 ///
 /// ```
@@ -12163,7 +12163,7 @@ static int parse_wkt_posns(enum base base, int dims, int depth, const char *wkt,
             }
             i = wkt_trim_ws(wkt, len, i+1);
         }
-        // read each number, delimted by whitespace
+        // read each number, delimited by whitespace
         while (i < len) {
             double num;
             if (isnum(wkt[i])) {
@@ -13251,7 +13251,7 @@ static void write_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
 /// @param n Maximum number of bytes to be used in the buffer.
 /// @return  The number of characters, not including the null-terminator, 
 /// needed to store the content into the C string buffer.
-/// If the returned length is greater than n-1, then only a parital copy
+/// If the returned length is greater than n-1, then only a partial copy
 /// occurred, for example:
 ///
 /// ```
@@ -14427,7 +14427,7 @@ static void write_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
 /// @param n Maximum number of bytes to be used in the buffer.
 /// @return  The number of characters needed to store the content into the
 /// buffer.
-/// If the returned length is greater than n, then only a parital copy
+/// If the returned length is greater than n, then only a partial copy
 /// occurred, for example:
 ///
 /// ```
@@ -14460,7 +14460,7 @@ size_t tg_geom_wkb(const struct tg_geom *geom, uint8_t *dst, size_t n) {
 /// @param n Maximum number of bytes to be used in the buffer.
 /// @return  The number of characters, not including the null-terminator, 
 /// needed to store the content into the C string buffer.
-/// If the returned length is greater than n-1, then only a parital copy
+/// If the returned length is greater than n-1, then only a partial copy
 /// occurred, for example:
 ///
 /// ```
@@ -15736,7 +15736,7 @@ static void write_geom_geobin(const struct tg_geom *geom, struct writer *wr) {
 /// @param n Maximum number of bytes to be used in the buffer.
 /// @return  The number of characters needed to store the content into the
 /// buffer.
-/// If the returned length is greater than n, then only a parital copy
+/// If the returned length is greater than n, then only a partial copy
 /// occurred, for example:
 ///
 /// ```

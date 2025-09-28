@@ -12,7 +12,7 @@ For a more general overview please see the project
 
 ## Table of contents
 
-- [Programing notes](#programing-notes)
+- [Programming notes](#programing-notes)
 - [Structs](#structs)
 - [Objects](#objects)
 - [Enums](#enums)
@@ -30,7 +30,7 @@ For a more general overview please see the project
 - [Polygon functions](#polygon-functions)
 - [Global environment](#global-environment)
 
-## Programing notes
+## Programming notes
 
 #### Pure functions
 
@@ -472,7 +472,7 @@ struct tg_rect {
     struct tg_point max;
 };
 ```
-A rectangle defined by a minimum and maximum coordinates. Returned by the [tg_geom_rect()](#group___geometry_accessors_1ga68d67f900b847ae08e6515a620f4f657), [tg_ring_rect()](#group___ring_funcs_1ga64086c935039b1f0fcd8633be763427d), and other *_rect() functions for getting a geometry's minumum bounding rectangle. Also used internally for geometry indexing. 
+A rectangle defined by a minimum and maximum coordinates. Returned by the [tg_geom_rect()](#group___geometry_accessors_1ga68d67f900b847ae08e6515a620f4f657), [tg_ring_rect()](#group___ring_funcs_1ga64086c935039b1f0fcd8633be763427d), and other *_rect() functions for getting a geometry's minimum bounding rectangle. Also used internally for geometry indexing. 
 
 **See also**
 
@@ -586,7 +586,7 @@ struct tg_geom;
 ```
 A geometry is the common generic type that can represent a Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, or GeometryCollection.
 
-For geometries that are derived from GeoJSON, they may have addtional attributes such as being a Feature or a FeatureCollection; or include extra json fields.
+For geometries that are derived from GeoJSON, they may have additional attributes such as being a Feature or a FeatureCollection; or include extra json fields.
 
 **Creating**
 
@@ -1039,7 +1039,7 @@ Returns the minimum bounding rectangle of a geometry.
 
 **Return**
 
-- Minumum bounding rectangle
+- Minimum bounding rectangle
 
 
 **See also**
@@ -1519,7 +1519,7 @@ Get the Z coordinate of a Point geometry.
 
 **Return**
 
-- For a TG_POINT geometry, returns the Z coodinate.
+- For a TG_POINT geometry, returns the Z coordinate.
 - For everything else returns zero.
 
 
@@ -1539,7 +1539,7 @@ Get the M coordinate of a Point geometry.
 
 **Return**
 
-- For a TG_POINT geometry, returns the M coodinate.
+- For a TG_POINT geometry, returns the M coordinate.
 - For everything else returns zero.
 
 
@@ -1565,7 +1565,7 @@ Get the extra coordinates for a geometry.
 
 **Note**
 
-- These are the raw coodinates provided by a constructor like [tg_geom_new_polygon_z()](#group___geometry_constructors_ex_1gac81514f9acbafce335d8982233772664) or from a parsed source like WKT "POLYGON Z ...".
+- These are the raw coordinates provided by a constructor like [tg_geom_new_polygon_z()](#group___geometry_constructors_ex_1gac81514f9acbafce335d8982233772664) or from a parsed source like WKT "POLYGON Z ...".
 
 
 **See also**
@@ -1832,7 +1832,7 @@ struct tg_geom *tg_parse_geojson(const char *geojson);
 ```
 Parse geojson.
 
-Supports [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946) standard, including Features, FeaturesCollection, ZM coordinates, properties, and arbritary JSON members. 
+Supports [GeoJSON](https://datatracker.ietf.org/doc/html/rfc7946) standard, including Features, FeaturesCollection, ZM coordinates, properties, and arbitrary JSON members. 
 
 **Parameters**
 
@@ -2470,7 +2470,7 @@ The content is stored as a C string in the buffer pointed to by dst. A terminati
 
 **Return**
 
-- The number of characters, not including the null-terminator, needed to store the content into the C string buffer. If the returned length is greater than n-1, then only a parital copy occurred, for example:
+- The number of characters, not including the null-terminator, needed to store the content into the C string buffer. If the returned length is greater than n-1, then only a partial copy occurred, for example:
 ```c
 char str[64];
 size_t len = tg_geom_geojson(geom, str, sizeof(str));
@@ -2512,7 +2512,7 @@ The content is stored as a C string in the buffer pointed to by dst. A terminati
 
 **Return**
 
-- The number of characters, not including the null-terminator, needed to store the content into the C string buffer. If the returned length is greater than n-1, then only a parital copy occurred, for example:
+- The number of characters, not including the null-terminator, needed to store the content into the C string buffer. If the returned length is greater than n-1, then only a partial copy occurred, for example:
 ```c
 char str[64];
 size_t len = tg_geom_wkt(geom, str, sizeof(str));
@@ -2554,7 +2554,7 @@ The content is stored in the buffer pointed by dst.
 
 **Return**
 
-- The number of characters needed to store the content into the buffer. If the returned length is greater than n, then only a parital copy occurred, for example:
+- The number of characters needed to store the content into the buffer. If the returned length is greater than n, then only a partial copy occurred, for example:
 ```c
 uint8_t buf[64];
 size_t len = tg_geom_wkb(geom, buf, sizeof(buf));
@@ -2596,7 +2596,7 @@ The content is stored as a C string in the buffer pointed to by dst. A terminati
 
 **Return**
 
-- The number of characters, not including the null-terminator, needed to store the content into the C string buffer. If the returned length is greater than n-1, then only a parital copy occurred, for example:
+- The number of characters, not including the null-terminator, needed to store the content into the C string buffer. If the returned length is greater than n-1, then only a partial copy occurred, for example:
 ```c
 char str[64];
 size_t len = tg_geom_hex(geom, str, sizeof(str));
@@ -2638,7 +2638,7 @@ The content is stored in the buffer pointed by dst.
 
 **Return**
 
-- The number of characters needed to store the content into the buffer. If the returned length is greater than n, then only a parital copy occurred, for example:
+- The number of characters needed to store the content into the buffer. If the returned length is greater than n, then only a partial copy occurred, for example:
 ```c
 uint8_t buf[64];
 size_t len = tg_geom_geobin(geom, buf, sizeof(buf));
@@ -3716,7 +3716,7 @@ Returns the minimum bounding rectangle of a rect.
 
 **Return**
 
-- Minimum bounding retangle
+- Minimum bounding rectangle
 
 
 **See also**
@@ -4075,7 +4075,7 @@ Iterates over all segments in ring A that intersect with segments in line B.
 
 **Note**
 
-- This efficently uses the indexes of each geometry, if available.
+- This efficiently uses the indexes of each geometry, if available.
 
 
 **See also**
@@ -4093,7 +4093,7 @@ Iterates over all segments in ring A that intersect with segments in ring B.
 
 **Note**
 
-- This efficently uses the indexes of each geometry, if available.
+- This efficiently uses the indexes of each geometry, if available.
 
 
 **See also**
@@ -4601,7 +4601,7 @@ Iterates over all segments in line A that intersect with segments in line B.
 
 **Note**
 
-- This efficently uses the indexes of each geometry, if available.
+- This efficiently uses the indexes of each geometry, if available.
 
 
 **See also**
