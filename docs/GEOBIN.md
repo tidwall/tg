@@ -92,7 +92,7 @@ It's required that when provided the extra json is valid json.
 ### 0x01: Point WKB
 
 When the head byte is 0x01, the entire binary is a WKB Point.
-The MBR must be cacluated from the WKB, which shouldn't be too difficult since
+The MBR must be calculated from the WKB, which shouldn't be too difficult since
 the WKB has its own head byte specifying dimensionality.
 
 ### 0x02: Non-point Geometry

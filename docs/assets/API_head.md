@@ -10,7 +10,7 @@ For a more general overview please see the project
 
 ## Table of contents
 
-- [Programing notes](#programing-notes)
+- [Programming notes](#programing-notes)
 - [Structs](#structs)
 - [Objects](#objects)
 - [Enums](#enums)
@@ -28,7 +28,7 @@ For a more general overview please see the project
 - [Polygon functions](#polygon-functions)
 - [Global environment](#global-environment)
 
-## Programing notes
+## Programming notes
 
 #### Pure functions
 

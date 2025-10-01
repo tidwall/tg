@@ -27,7 +27,7 @@ struct tg_segment {
 
 /// A rectangle defined by a minimum and maximum coordinates.
 /// Returned by the tg_geom_rect(), tg_ring_rect(), and other \*_rect() 
-/// functions for getting a geometry's minumum bounding rectangle.
+/// functions for getting a geometry's minimum bounding rectangle.
 /// Also used internally for geometry indexing.
 /// @see RectFuncs
 struct tg_rect {

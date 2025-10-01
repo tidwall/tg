@@ -36,7 +36,7 @@ The speedup can be dramatic. Effectively turning an O(n) operation into an [O(lo
 
 Yet the downside of straight-up using an R-tree in its traditional format is that the construction time is slow and the index can use a lot of memory.
 
-This is because constructing an R-tree usually requires organizing the segments in such a way to make for efficent searching. This organizing usually consists of sorting the segments into leaf nodes and creating subsequent branch nodes. Sorting is slow, and storing all this node data will result in a lot of extra memory being used. Sometimes more than double the size of the original polygon itself.
+This is because constructing an R-tree usually requires organizing the segments in such a way to make for efficient searching. This organizing usually consists of sorting the segments into leaf nodes and creating subsequent branch nodes. Sorting is slow, and storing all this node data will result in a lot of extra memory being used. Sometimes more than double the size of the original polygon itself.
 
 The next two sections introduce the [Natural](#natural) and [YStripes](#ystripes) structures, and address the issue of construction time, memory usage, and search performance.
 

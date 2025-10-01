@@ -87,7 +87,7 @@ struct tg_geom *__any_parse(int line, const char *input, bool oom) {
     }
     tg_geom_hex(geom, buf2, sizeof(buf2));
     if (strcmp(buf1, buf2) != 0) {
-        printf("line %d: hex reencode mismatch: expected:\n\t%s\n"
+        printf("line %d: hex re-encode mismatch: expected:\n\t%s\n"
             "got:\n\t%s\n\n", line, buf1, buf2);
         abort();
     }

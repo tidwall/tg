@@ -77,7 +77,7 @@ enum json_type json_type(struct json json);
 // json_raw returns the start of the raw json data.
 // 
 // This function may return NULL if the input is non-existent. Also there is
-// no guarentee that this data will be null-terminated C string. If you want to
+// no guarantee that this data will be null-terminated C string. If you want to
 // retain this data for longer that the data from the original 'json_parse'
 // call then you should copy it first, such as:
 // 
@@ -131,7 +131,7 @@ bool json_string_is_escaped(struct json json);
 //
 // Returns the number of characters, not including the null-terminator, needed
 // to store the JSON into the C string buffer.
-// If the returned length is greater than nbytes-1, then only a parital copy
+// If the returned length is greater than nbytes-1, then only a partial copy
 // occurred, for example:
 //    
 //    char buf[64];
@@ -194,7 +194,7 @@ bool json_bool(struct json json);
 //
 // Returns the number of characters, not including the null-terminator, needed
 // to store the escaped JSON string in the C string buffer.
-// If the returned length is greater than n-1, then only a parital copy
+// If the returned length is greater than n-1, then only a partial copy
 // occurred. In other words the 
 size_t json_escape(const char *str, char *escaped, size_t n); 
 size_t json_escapen(const char *str, size_t len, char *escaped, size_t n); 

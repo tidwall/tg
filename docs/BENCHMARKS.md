@@ -155,7 +155,7 @@ geos/none            63,730    15691   10000  2298    47.45 µs    240,168
 geos/prepared       120,078     8328   10000  2298   669.48 µs    764,696
 
 <b>== Line intersect ==</b>
-Benchmark line interecting polygon operation for 10K random line
+Benchmark line intersecting polygon operation for 10K random line
 segments that are each no larger than 10% the width of the polygon
 and are within the polygon's MBR plus an extra 10% padding.
 Performs 10 runs and chooses the best results.

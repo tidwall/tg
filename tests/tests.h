@@ -444,7 +444,7 @@ bool segeq(struct tg_segment a, struct tg_segment b) {
 }
 
 // eqish should only be used for comparing calculations like distance or area.
-// Spefically for meters where you need cm accuracy
+// Specifically for meters where you need cm accuracy
 bool eqish(double a, double b) {
     return fabs(a-b) < 0.001;
 }
