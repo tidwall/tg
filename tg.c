@@ -951,11 +951,25 @@ void tg_env_set_allocator(
 }
 
 void *tg_malloc(size_t nbytes) {
-    return (_malloc?_malloc:malloc)(nbytes);
+    void *ptr = (_malloc?_malloc:malloc)(nbytes);
+#ifdef TG_ABORTNOMEM
+    if (!ptr) {
+        fprintf(stderr, "Out of memory\n");
+        abort();
+    }
+#endif
+    return ptr;
 }
 
 void *tg_realloc(void *ptr, size_t nbytes) {
-    return (_realloc?_realloc:realloc)(ptr, nbytes);
+    ptr = (_realloc?_realloc:realloc)(ptr, nbytes);
+#ifdef TG_ABORTNOMEM
+    if (!ptr) {
+        fprintf(stderr, "Out of memory\n");
+        abort();
+    }
+#endif
+    return ptr;
 }
 
 void tg_free(void *ptr) {
