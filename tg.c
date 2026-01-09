@@ -563,7 +563,7 @@ The relaxed/release/acquire pattern is based on:
 http://boost.org/doc/libs/1_87_0/libs/atomic/doc/html/atomic/usage_examples.html
 */
 
-typedef atomic_int rc_t;
+typedef atomic_int_fast32_t rc_t;
 static void rc_init(rc_t *rc) {
     atomic_init(rc, 0);
 }
@@ -581,12 +581,57 @@ static bool rc_release(rc_t *rc) {
 #endif
 
 struct head { 
-    rc_t rc;
-    unsigned noheap:1;
-    enum base base:4;
-    enum tg_geom_type type:4;
-    enum flags flags:8;
+    rc_t rc;        // 4-byte atomic reference counter
+    uint8_t noheap; // bool
+    uint8_t base;   // enum base
+    uint8_t type;   // enum tg_geom_type
+    uint8_t flags;  // enum flags
 };
+
+static_assert(sizeof(struct head) == 8, "");
+
+// The obj param in the following head functions must be:
+// head, tg_geom, tg_ring, tg_line, or boxed_point.
+
+static void setnoheap(void *obj, bool noheap) {
+    struct head *head = (struct head*)obj;
+    head->noheap = noheap;
+}
+
+static bool getnoheap(const void *obj) {
+    const struct head *head = (struct head*)obj;
+    return head->noheap;
+}
+
+static void setbase(void *obj, enum base base) {
+    struct head *head = (struct head*)obj;
+    head->base = base;
+}
+
+static enum base getbase(const void *obj) {
+    const struct head *head = (struct head*)obj;
+    return head->base;
+}
+
+static void settype(void *obj, enum tg_geom_type type) {
+    struct head *head = (struct head*)obj;
+    head->type = type;
+}
+
+static enum tg_geom_type gettype(const void *obj) {
+    const struct head *head = (struct head*)obj;
+    return head->type;
+}
+
+static void setflags(void *obj, enum flags flags) {
+    struct head *head = (struct head*)obj;
+    head->flags |= flags;
+}
+
+static enum flags getflags(const void *obj) {
+    const struct head *head = (struct head*)obj;
+    return head->flags;
+}
 
 /// A ring is series of tg_segment which creates a shape that does not
 /// self-intersect and is fully closed, where the start and end points are the
@@ -1824,8 +1869,8 @@ struct tg_rect tg_rect_expand_point(struct tg_rect rect, struct tg_point point)
 // rect_to_ring fills the ring with rect data.
 static void rect_to_ring(struct tg_rect rect, struct tg_ring *ring) {
     memset(ring, 0, sizeof(struct tg_ring));
-    ring->head.base = BASE_RING;
-    ring->head.type = TG_POLYGON;
+    setbase(ring, BASE_RING);
+    settype(ring, TG_POLYGON);
     ring->rect = rect;
     ring->closed = true;
     ring->convex = true;
@@ -2216,11 +2261,11 @@ static struct tg_ring *series_new(const struct tg_point *points, int npoints,
     ring->points[npoints] = ring->points[0];
 
     if (closed) {
-        ring->head.base = BASE_RING;
-        ring->head.type = TG_POLYGON;
+        setbase(ring, BASE_RING);
+        settype(ring, TG_POLYGON);
     } else {
-        ring->head.base = BASE_LINE;
-        ring->head.type = TG_LINESTRING;
+        setbase(ring, BASE_LINE);
+        settype(ring, TG_LINESTRING);
     }
     if (ystripes) {
         // Process ystripes for closed series only. e.g. rings, not lines.
@@ -2290,7 +2335,9 @@ struct tg_ring *tg_ring_new_ix(const struct tg_point *points, int npoints,
 /// @param ring Input ring
 /// @see RingFuncs
 void tg_ring_free(struct tg_ring *ring) {
-    if (!ring || ring->head.noheap || !rc_release(&ring->head.rc)) return;
+    if (!ring || getnoheap(ring) || !rc_release(&ring->head.rc)) {
+        return;
+    }
     if (ring->ystripes) tg_free(ring->ystripes);
     tg_free(ring);
 }
@@ -2313,7 +2360,7 @@ static size_t ring_alloc_size(const struct tg_ring *ring) {
 /// reference counter.
 /// @see RingFuncs
 struct tg_ring *tg_ring_clone(const struct tg_ring *ring) {
-    if (!ring || ring->head.noheap) {
+    if (!ring || getnoheap(ring)) {
         return tg_ring_copy(ring);
     }
     struct tg_ring *ring_mut = (struct tg_ring*)ring;
@@ -3781,8 +3828,8 @@ struct tg_poly *tg_poly_new(const struct tg_ring *exterior,
     memset(poly, 0, sizeof(struct tg_poly));
     rc_init(&poly->head.rc);
     rc_retain(&poly->head.rc);
-    poly->head.base = BASE_POLY;
-    poly->head.type = TG_POLYGON;
+    setbase(poly, BASE_POLY);
+    settype(poly, TG_POLYGON);
     poly->exterior = tg_ring_clone(exterior);
     if (nholes > 0) {
         poly->holes = tg_malloc(sizeof(struct tg_ring*)*nholes);
@@ -3806,11 +3853,11 @@ fail:
 /// @see PolyFuncs
 void tg_poly_free(struct tg_poly *poly) {
     if (!poly) return;
-    if (poly->head.base == BASE_RING) {
+    if (getbase(poly) == BASE_RING) {
         tg_ring_free((struct tg_ring*)poly);
         return;
     }
-    if (poly->head.noheap || !rc_release(&poly->head.rc)) return;
+    if (getnoheap(poly) || !rc_release(&poly->head.rc)) return;
     if (poly->exterior) tg_ring_free(poly->exterior);
     if (poly->holes) {
         for (int i = 0; i < poly->nholes; i++) {
@@ -3829,7 +3876,7 @@ void tg_poly_free(struct tg_poly *poly) {
 /// reference counter.
 /// @see PolyFuncs
 struct tg_poly *tg_poly_clone(const struct tg_poly *poly) {
-    if (!poly || poly->head.noheap) {
+    if (!poly || getnoheap(poly)) {
         return tg_poly_copy(poly);
     }
     struct tg_poly *poly_mut = (struct tg_poly*)poly;
@@ -3844,7 +3891,7 @@ struct tg_poly *tg_poly_clone(const struct tg_poly *poly) {
 /// @see PolyFuncs
 const struct tg_ring *tg_poly_exterior(const struct tg_poly *poly) {
     if (!poly) return NULL;
-    if (poly->head.base == BASE_RING) {
+    if (getbase(poly) == BASE_RING) {
         return (struct tg_ring*)poly;
     }
     return poly->exterior;
@@ -3856,7 +3903,7 @@ const struct tg_ring *tg_poly_exterior(const struct tg_poly *poly) {
 /// @see tg_poly_hole_at()
 /// @see PolyFuncs
 int tg_poly_num_holes(const struct tg_poly *poly) {
-    if (!poly || poly->head.base == BASE_RING) return 0;
+    if (!poly || getbase(poly) == BASE_RING) return 0;
     return poly->nholes;
 }
 
@@ -3867,7 +3914,7 @@ int tg_poly_num_holes(const struct tg_poly *poly) {
 /// @see tg_poly_num_holes()
 /// @see PolyFuncs
 const struct tg_ring *tg_poly_hole_at(const struct tg_poly *poly, int index) {
-    if (!poly || poly->head.base == BASE_RING) return NULL;
+    if (!poly || getbase(poly) == BASE_RING) return NULL;
     if (index < 0 || index >= poly->nholes) return NULL;
     return poly->holes[index];
 }
@@ -3896,7 +3943,7 @@ struct tg_rect tg_poly_rect(const struct tg_poly *poly) {
 static bool poly_contains_point(const struct tg_poly *poly, 
     struct tg_point point, bool allow_on_edge)
 {
-    if (poly && poly->head.base == BASE_RING) {
+    if (poly && getbase(poly) == BASE_RING) {
         // downcast fast path
         return tg_ring_contains_point((struct tg_ring*)poly, point, 
             allow_on_edge).hit;
@@ -4003,7 +4050,7 @@ bool tg_poly_contains_line(const struct tg_poly *a, const struct tg_line *b) {
 bool tg_poly_intersects_line(const struct tg_poly *poly,
     const struct tg_line *line)
 {
-    if (poly && poly->head.base == BASE_RING) {
+    if (poly && getbase(poly) == BASE_RING) {
         // downcast fast path
         return tg_ring_intersects_line((struct tg_ring*)poly, line, true);
     }
@@ -4025,8 +4072,8 @@ bool tg_poly_intersects_line(const struct tg_poly *poly,
 /// Tests whether a polygon fully contains another polygon.
 /// @see PolyFuncs
 bool tg_poly_covers_poly(const struct tg_poly *a, const struct tg_poly *b) {
-    if (a && a->head.base == BASE_RING && 
-        b && b->head.base == BASE_RING)
+    if (a && getbase(a) == BASE_RING && 
+        b && getbase(b) == BASE_RING)
     {
         // downcast fast path
         return tg_ring_contains_ring((struct tg_ring*)a, (struct tg_ring*)b,
@@ -4042,11 +4089,11 @@ bool tg_poly_covers_poly(const struct tg_poly *a, const struct tg_poly *b) {
     int a_nholes = tg_poly_num_holes(a);
     int b_nholes = tg_poly_num_holes(b);
     struct tg_ring **a_holes = NULL;
-    if (a->head.base == BASE_POLY) {
+    if (getbase(a) == BASE_POLY) {
         a_holes = a->holes;
     }
     struct tg_ring **b_holes = NULL;
-    if (b->head.base == BASE_POLY) {
+    if (getbase(b) == BASE_POLY) {
         b_holes = b->holes;
     }
     
@@ -4085,8 +4132,8 @@ bool tg_poly_contains_poly(const struct tg_poly *a, const struct tg_poly *b) {
 bool tg_poly_intersects_poly(const struct tg_poly *poly, 
     const struct tg_poly *other)
 {
-    if (poly && poly->head.base == BASE_RING && 
-        other && other->head.base == BASE_RING)
+    if (poly && getbase(poly) == BASE_RING && 
+        other && getbase(other) == BASE_RING)
     {
         // downcast fast path
         return tg_ring_intersects_ring((struct tg_ring*)poly,
@@ -4100,9 +4147,9 @@ bool tg_poly_intersects_poly(const struct tg_poly *poly,
     int poly_nholes = tg_poly_num_holes(poly);
     int other_nholes = tg_poly_num_holes(other);
     struct tg_ring **poly_holes = NULL;
-    if (poly->head.base == BASE_POLY) poly_holes = poly->holes;
+    if (getbase(poly) == BASE_POLY) poly_holes = poly->holes;
     struct tg_ring **other_holes = NULL;
-    if (other->head.base == BASE_POLY) other_holes = other->holes;
+    if (getbase(other) == BASE_POLY) other_holes = other->holes;
 
     if (!tg_ring_intersects_ring(other_exterior, poly_exterior, true)) {
         return false;
@@ -4236,7 +4283,7 @@ struct tg_poly *tg_poly_move(const struct tg_poly *poly, double delta_x,
     double delta_y)
 {
     if (!poly) return NULL;
-    if (poly->head.base == BASE_RING) {
+    if (getbase(poly) == BASE_RING) {
         return (struct tg_poly*)tg_ring_move((struct tg_ring*)poly, delta_x, 
             delta_y);
     }
@@ -4276,7 +4323,7 @@ done:
 /// @see PolyFuncs
 size_t tg_poly_memsize(const struct tg_poly *poly) {
     if (!poly) return 0;
-    if (poly->head.base == BASE_RING) {
+    if (getbase(poly) == BASE_RING) {
         return tg_ring_memsize((struct tg_ring*)poly);
     }
     size_t size = sizeof(struct tg_poly);
@@ -4300,15 +4347,15 @@ static struct tg_geom *geom_new(enum tg_geom_type type) {
     memset(geom, 0, sizeof(struct tg_geom));
     rc_init(&geom->head.rc);
     rc_retain(&geom->head.rc);
-    geom->head.base = BASE_GEOM;
-    geom->head.type = type;
+    setbase(geom, BASE_GEOM);
+    settype(geom, type);
     return geom;
 }
 
 static struct tg_geom *geom_new_empty(enum tg_geom_type type) {
     struct tg_geom *geom = geom_new(type);
     if (!geom) return NULL;
-    geom->head.flags = IS_EMPTY;
+    setflags(geom, IS_EMPTY);
     return geom;
 }
 
@@ -4324,14 +4371,16 @@ struct tg_geom *tg_geom_new_point(struct tg_point point) {
     memset(geom, 0, sizeof(struct boxed_point));
     rc_init(&geom->head.rc);
     rc_retain(&geom->head.rc);
-    geom->head.base = BASE_POINT;
-    geom->head.type = TG_POINT;
+    setbase(geom, BASE_POINT);
+    settype(geom, TG_POINT);
     geom->point = point;
     return (struct tg_geom*)geom;
 }
 
 static void boxed_point_free(struct boxed_point *point) {
-    if (point->head.noheap || !rc_release(&point->head.rc)) return;
+    if (getnoheap(point) || !rc_release(&point->head.rc)) {
+        return;
+    }
     tg_free(point);
 }
 
@@ -4344,7 +4393,7 @@ static void boxed_point_free(struct boxed_point *point) {
 struct tg_geom *tg_geom_new_point_z(struct tg_point point, double z) {
     struct tg_geom *geom = geom_new(TG_POINT);
     if (!geom) return NULL;
-    geom->head.flags = HAS_Z;
+    setflags(geom, HAS_Z);
     geom->point = point;
     geom->z = z;
     return geom;
@@ -4359,7 +4408,7 @@ struct tg_geom *tg_geom_new_point_z(struct tg_point point, double z) {
 struct tg_geom *tg_geom_new_point_m(struct tg_point point, double m) {
     struct tg_geom *geom = geom_new(TG_POINT);
     if (!geom) return NULL;
-    geom->head.flags = HAS_M;
+    setflags(geom, HAS_M);
     geom->point = point;
     geom->m = m;
     return geom;
@@ -4376,7 +4425,7 @@ struct tg_geom *tg_geom_new_point_zm(struct tg_point point, double z, double m)
 {
     struct tg_geom *geom = geom_new(TG_POINT);
     if (!geom) return NULL;
-    geom->head.flags = HAS_Z | HAS_M;
+    setflags(geom, HAS_Z | HAS_M);
     geom->point = point;
     geom->z = z;
     geom->m = m;
@@ -4625,11 +4674,11 @@ static struct tg_geom *multi_geom_inflate_rect(struct tg_geom *geom) {
 }
 
 static const struct multi *geom_multi(const struct tg_geom *geom) {
-    if (geom && geom->head.base == BASE_GEOM && (
-        geom->head.type == TG_MULTIPOINT ||
-        geom->head.type == TG_MULTILINESTRING ||
-        geom->head.type == TG_MULTIPOLYGON ||
-        geom->head.type == TG_GEOMETRYCOLLECTION))
+    if (geom && getbase(geom) == BASE_GEOM && (
+        gettype(geom) == TG_MULTIPOINT ||
+        gettype(geom) == TG_MULTILINESTRING ||
+        gettype(geom) == TG_MULTIPOLYGON ||
+        gettype(geom) == TG_GEOMETRYCOLLECTION))
     {
         return geom->multi;
     }
@@ -4782,7 +4831,7 @@ static struct tg_geom *fill_extra_coords(struct tg_geom *geom,
 {
     ncoords = ncoords < 0 ? 0 : ncoords;
     // if (!geom) return NULL; // already checked
-    geom->head.flags = flags;
+    setflags(geom, flags);
     geom->ncoords = ncoords;
     if (ncoords == 0) {
         geom->coords = NULL;
@@ -5081,7 +5130,7 @@ struct tg_geom *tg_geom_new_multipolygon_zm(
 /// reference counter.
 /// @see GeometryConstructors
 struct tg_geom *tg_geom_clone(const struct tg_geom *geom) {
-    if (!geom || geom->head.noheap) {
+    if (!geom || getnoheap(geom)) {
         return tg_geom_copy(geom);
     }
     struct tg_geom *geom_mut = (struct tg_geom*)geom;
@@ -5090,8 +5139,10 @@ struct tg_geom *tg_geom_clone(const struct tg_geom *geom) {
 }
 
 static void geom_free(struct tg_geom *geom) {
-    if (geom->head.noheap || !rc_release(&geom->head.rc)) return;
-    switch (geom->head.type) {
+    if (getnoheap(geom) || !rc_release(&geom->head.rc)) {
+        return;
+    }
+    switch (gettype(geom)) {
     case TG_POINT:
         break;
     case TG_LINESTRING:
@@ -5121,7 +5172,7 @@ static void geom_free(struct tg_geom *geom) {
         }
         break;
     }
-    if (geom->head.type != TG_POINT && geom->coords) {
+    if (gettype(geom) != TG_POINT && geom->coords) {
         tg_free(geom->coords);
     }
     if (geom->error) {
@@ -5139,7 +5190,7 @@ void tg_geom_free(struct tg_geom *geom) {
     if (!geom) {
         return;
     }
-    switch (geom->head.base) {
+    switch (getbase(geom)) {
     case BASE_GEOM:
         geom_free(geom);
         break;
@@ -5166,7 +5217,7 @@ void tg_geom_free(struct tg_geom *geom) {
 /// @see GeometryAccessors
 enum tg_geom_type tg_geom_typeof(const struct tg_geom *geom) {
     if (!geom) return 0;
-    return geom->head.type;
+    return gettype(geom);
 }
 
 /// Returns true if the geometry is a GeoJSON Feature.
@@ -5174,7 +5225,7 @@ enum tg_geom_type tg_geom_typeof(const struct tg_geom *geom) {
 /// @return True or false
 /// @see GeometryAccessors
 bool tg_geom_is_feature(const struct tg_geom *geom) {
-    return geom && (geom->head.flags&IS_FEATURE) == IS_FEATURE;
+    return geom && (getflags(geom)&IS_FEATURE) == IS_FEATURE;
 }
 
 /// Returns true if the geometry is a GeoJSON FeatureCollection.
@@ -5182,12 +5233,12 @@ bool tg_geom_is_feature(const struct tg_geom *geom) {
 /// @return True or false
 /// @see GeometryAccessors
 bool tg_geom_is_featurecollection(const struct tg_geom *geom) {
-    return geom && (geom->head.flags&IS_FEATURE_COL) == IS_FEATURE_COL;
+    return geom && (getflags(geom)&IS_FEATURE_COL) == IS_FEATURE_COL;
 }
 
 static struct tg_rect geom_rect(const struct tg_geom *geom) {
     struct tg_rect rect = { 0 };
-    switch (geom->head.type) {
+    switch (gettype(geom)) {
     case TG_POINT:
         return tg_point_rect(geom->point);
     case TG_LINESTRING: 
@@ -5212,7 +5263,7 @@ static struct tg_rect geom_rect(const struct tg_geom *geom) {
 /// @see GeometryAccessors
 struct tg_rect tg_geom_rect(const struct tg_geom *geom) {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return geom_rect(geom);
         case BASE_POINT: 
@@ -5237,10 +5288,10 @@ struct tg_rect tg_geom_rect(const struct tg_geom *geom) {
 /// @see GeometryAccessors
 struct tg_point tg_geom_point(const struct tg_geom *geom) {
     if (!geom) return (struct tg_point) { 0 };
-    if (geom->head.base == BASE_POINT) {
+    if (getbase(geom) == BASE_POINT) {
         return ((struct boxed_point*)geom)->point;
     }
-    if (geom->head.base == BASE_GEOM && geom->head.type == TG_POINT) {
+    if (getbase(geom) == BASE_GEOM && gettype(geom) == TG_POINT) {
         return geom->point;
     }
     struct tg_rect rect = tg_geom_rect(geom);
@@ -5252,7 +5303,7 @@ struct tg_point tg_geom_point(const struct tg_geom *geom) {
 
 static size_t geom_memsize(const struct tg_geom *geom) {
     size_t size = sizeof(struct tg_geom);
-    switch (geom->head.type) {
+    switch (gettype(geom)) {
     case TG_POINT:
         break;
     case TG_LINESTRING:
@@ -5280,7 +5331,7 @@ static size_t geom_memsize(const struct tg_geom *geom) {
         }
         break;
     }
-    if (geom->head.type != TG_POINT && geom->coords) {
+    if (gettype(geom) != TG_POINT && geom->coords) {
         size += geom->ncoords*sizeof(double);
     }
     if (geom->xjson) {
@@ -5295,7 +5346,7 @@ static size_t geom_memsize(const struct tg_geom *geom) {
 /// @return Size of geometry in bytes
 size_t tg_geom_memsize(const struct tg_geom *geom) {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return geom_memsize(geom);
         case BASE_POINT: 
@@ -5319,8 +5370,8 @@ size_t tg_geom_memsize(const struct tg_geom *geom) {
 /// @see GeometryAccessors
 const struct tg_line *tg_geom_line(const struct tg_geom *geom) {
     if (!geom) return NULL;
-    if (geom->head.base == BASE_LINE) return (struct tg_line*)geom;
-    if (geom->head.base == BASE_GEOM && geom->head.type == TG_LINESTRING) {
+    if (getbase(geom) == BASE_LINE) return (struct tg_line*)geom;
+    if (getbase(geom) == BASE_GEOM && gettype(geom) == TG_LINESTRING) {
         return geom->line;
     }
     return NULL;
@@ -5334,9 +5385,9 @@ const struct tg_line *tg_geom_line(const struct tg_geom *geom) {
 /// @see GeometryAccessors
 const struct tg_poly *tg_geom_poly(const struct tg_geom *geom) {
     if (!geom) return NULL;
-    if (geom->head.base == BASE_RING) return (struct tg_poly*)geom;
-    if (geom->head.base == BASE_POLY) return (struct tg_poly*)geom;
-    if (geom->head.base == BASE_GEOM && geom->head.type == TG_POLYGON) {
+    if (getbase(geom) == BASE_RING) return (struct tg_poly*)geom;
+    if (getbase(geom) == BASE_POLY) return (struct tg_poly*)geom;
+    if (getbase(geom) == BASE_GEOM && gettype(geom) == TG_POLYGON) {
         return geom->poly;
     }
     return NULL;
@@ -5350,7 +5401,7 @@ const struct tg_poly *tg_geom_poly(const struct tg_geom *geom) {
 /// @see GeometryAccessors
 int tg_geom_num_points(const struct tg_geom *geom) {
     if (!geom) return 0;
-    if (geom->head.base == BASE_GEOM && geom->head.type == TG_MULTIPOINT &&
+    if (getbase(geom) == BASE_GEOM && gettype(geom) == TG_MULTIPOINT &&
         geom->multi)
     {
         return geom->multi->ngeoms;
@@ -5366,7 +5417,7 @@ int tg_geom_num_points(const struct tg_geom *geom) {
 /// @see GeometryAccessors
 int tg_geom_num_lines(const struct tg_geom *geom) {
     if (!geom) return 0;
-    if (geom->head.base == BASE_GEOM && geom->head.type == TG_MULTILINESTRING &&
+    if (getbase(geom) == BASE_GEOM && gettype(geom) == TG_MULTILINESTRING &&
         geom->multi)
     {
         return geom->multi->ngeoms;
@@ -5382,7 +5433,7 @@ int tg_geom_num_lines(const struct tg_geom *geom) {
 /// @see GeometryAccessors
 int tg_geom_num_polys(const struct tg_geom *geom) {
     if (!geom) return 0;
-    if (geom->head.base == BASE_GEOM && geom->head.type == TG_MULTIPOLYGON &&
+    if (getbase(geom) == BASE_GEOM && gettype(geom) == TG_MULTIPOLYGON &&
         geom->multi)
     {
         return geom->multi->ngeoms;
@@ -5401,8 +5452,8 @@ int tg_geom_num_polys(const struct tg_geom *geom) {
 /// @see GeometryAccessors
 int tg_geom_num_geometries(const struct tg_geom *geom) {
     if (!geom) return 0;
-    if (geom->head.base == BASE_GEOM && 
-        geom->head.type == TG_GEOMETRYCOLLECTION && geom->multi)
+    if (getbase(geom) == BASE_GEOM && 
+        gettype(geom) == TG_GEOMETRYCOLLECTION && geom->multi)
     {
         return geom->multi->ngeoms;
     }
@@ -5417,8 +5468,8 @@ int tg_geom_num_geometries(const struct tg_geom *geom) {
 /// @see tg_geom_num_points()
 /// @see GeometryAccessors
 struct tg_point tg_geom_point_at(const struct tg_geom *geom, int index) {
-    if (geom && geom->head.base == BASE_GEOM && 
-        geom->head.type == TG_MULTIPOINT && 
+    if (geom && getbase(geom) == BASE_GEOM && 
+        gettype(geom) == TG_MULTIPOINT && 
         geom->multi &&index >= 0 && index <= geom->multi->ngeoms)
     {
         return ((struct boxed_point*)geom->multi->geoms[index])->point;
@@ -5434,8 +5485,8 @@ struct tg_point tg_geom_point_at(const struct tg_geom *geom, int index) {
 /// @see tg_geom_num_lines()
 /// @see GeometryAccessors
 const struct tg_line *tg_geom_line_at(const struct tg_geom *geom, int index) {
-    if (geom && geom->head.base == BASE_GEOM && 
-        geom->head.type == TG_MULTILINESTRING && 
+    if (geom && getbase(geom) == BASE_GEOM && 
+        gettype(geom) == TG_MULTILINESTRING && 
         geom->multi &&index >= 0 && index <= geom->multi->ngeoms)
     {
         return (struct tg_line*)geom->multi->geoms[index];
@@ -5451,8 +5502,8 @@ const struct tg_line *tg_geom_line_at(const struct tg_geom *geom, int index) {
 /// @see tg_geom_num_polys()
 /// @see GeometryAccessors
 const struct tg_poly *tg_geom_poly_at(const struct tg_geom *geom, int index) {
-    if (geom && geom->head.base == BASE_GEOM && 
-        geom->head.type == TG_MULTIPOLYGON && 
+    if (geom && getbase(geom) == BASE_GEOM && 
+        gettype(geom) == TG_MULTIPOLYGON && 
         geom->multi && index >= 0 && index <= geom->multi->ngeoms)
     {
         return (struct tg_poly *)geom->multi->geoms[index];
@@ -5473,8 +5524,8 @@ const struct tg_poly *tg_geom_poly_at(const struct tg_geom *geom, int index) {
 const struct tg_geom *tg_geom_geometry_at(const struct tg_geom *geom, 
     int index)
 {
-    if (geom && geom->head.base == BASE_GEOM && 
-        geom->head.type == TG_GEOMETRYCOLLECTION && 
+    if (geom && getbase(geom) == BASE_GEOM && 
+        gettype(geom) == TG_GEOMETRYCOLLECTION && 
         geom->multi && index >= 0 && index <= geom->multi->ngeoms)
     {
         return geom->multi->geoms[index];
@@ -5489,8 +5540,8 @@ static bool geom_foreach(const struct tg_geom *geom,
     if (!geom) {
         return true;
     }
-    if (geom->head.base == BASE_GEOM) {
-        switch (geom->head.type) {
+    if (getbase(geom) == BASE_GEOM) {
+        switch (gettype(geom)) {
         case TG_MULTIPOINT:
         case TG_MULTILINESTRING:
         case TG_MULTIPOLYGON:
@@ -5532,8 +5583,8 @@ static bool point_intersects_geom(struct tg_point point,
 static bool point_intersects_base_geom(struct tg_point point,
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_point_intersects_point(point, geom->point); 
         case TG_LINESTRING: 
@@ -5561,7 +5612,7 @@ static bool point_intersects_geom(struct tg_point point,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return point_intersects_base_geom(point, geom);
         case BASE_POINT:
@@ -5584,8 +5635,8 @@ static bool line_intersects_geom(struct tg_line *line,
 static bool line_intersects_base_geom(struct tg_line *line,
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_line_intersects_point(line, geom->point); 
         case TG_LINESTRING: 
@@ -5613,7 +5664,7 @@ static bool line_intersects_geom(struct tg_line *line,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return line_intersects_base_geom(line, geom);
         case BASE_POINT:
@@ -5636,8 +5687,8 @@ static bool poly_intersects_geom(struct tg_poly *poly,
 static bool poly_intersects_base_geom(struct tg_poly *poly, 
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_poly_intersects_point(poly, geom->point); 
         case TG_LINESTRING: 
@@ -5665,7 +5716,7 @@ static bool poly_intersects_geom(struct tg_poly *poly,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return poly_intersects_base_geom(poly, geom);
         case BASE_POINT:
@@ -5700,8 +5751,8 @@ static bool multiiter(const struct tg_geom *geom, int index, void *udata) {
 static bool base_geom_intersects_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return point_intersects_geom(geom->point, other);
         case TG_LINESTRING: 
@@ -5726,7 +5777,7 @@ bool tg_geom_intersects(const struct tg_geom *geom,
     const struct tg_geom *other)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return base_geom_intersects_geom(geom, other);
         case BASE_POINT: 
@@ -5755,8 +5806,8 @@ static bool point_covers_geom(struct tg_point point,
 static bool point_covers_base_geom(struct tg_point point,
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_point_covers_point(point, geom->point); 
         case TG_LINESTRING: 
@@ -5783,7 +5834,7 @@ static bool point_covers_geom(struct tg_point point,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return point_covers_base_geom(point, geom);
         case BASE_POINT:
@@ -5806,8 +5857,8 @@ static bool line_covers_geom(struct tg_line *line,
 static bool line_covers_base_geom(struct tg_line *line,
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_line_covers_point(line, geom->point); 
         case TG_LINESTRING: 
@@ -5834,7 +5885,7 @@ static bool line_covers_geom(struct tg_line *line,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return line_covers_base_geom(line, geom);
         case BASE_POINT:
@@ -5857,8 +5908,8 @@ static bool poly_covers_geom(struct tg_poly *poly,
 static bool poly_covers_base_geom(struct tg_poly *poly, 
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_poly_covers_point(poly, geom->point); 
         case TG_LINESTRING: 
@@ -5885,7 +5936,7 @@ static bool poly_covers_geom(struct tg_poly *poly,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return poly_covers_base_geom(poly, geom);
         case BASE_POINT:
@@ -5920,7 +5971,7 @@ static bool geom_covers_iter0(const struct tg_geom *geom, void *udata) {
 bool tg_geom_is_empty(const struct tg_geom *geom);
 
 static bool base_geom_deep_empty(const struct tg_geom *geom) {
-    switch (geom->head.type) {
+    switch (gettype(geom)) {
     case TG_POINT:
         return false;
     case TG_LINESTRING:
@@ -5948,8 +5999,8 @@ static bool base_geom_deep_empty(const struct tg_geom *geom) {
 /// @return True or false
 bool tg_geom_is_empty(const struct tg_geom *geom) {
     if (geom) {
-        if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) return true;
-        switch (geom->head.base) {
+        if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) return true;
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return base_geom_deep_empty(geom);
         case BASE_POINT:
@@ -5986,8 +6037,8 @@ static bool geom_covers_iter(const struct tg_geom *geom, void *udata) {
 static bool base_geom_covers_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT:
             return point_covers_geom(geom->point, other);
         case TG_LINESTRING:
@@ -6012,7 +6063,7 @@ static bool base_geom_covers_geom(const struct tg_geom *geom,
 /// @see GeometryPredicates
 bool tg_geom_covers(const struct tg_geom *geom, const struct tg_geom *other) {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return base_geom_covers_geom(geom, other);
         case BASE_POINT: 
@@ -6041,8 +6092,8 @@ static bool poly_contains_geom(struct tg_poly *poly,
 static bool poly_contains_base_geom(struct tg_poly *poly, 
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_poly_contains_point(poly, geom->point); 
         case TG_LINESTRING: 
@@ -6073,7 +6124,7 @@ static bool poly_contains_geom(struct tg_poly *poly,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return poly_contains_base_geom(poly, geom);
         case BASE_POINT:
@@ -6096,8 +6147,8 @@ static bool line_contains_geom(struct tg_line *line,
 static bool line_contains_base_geom(struct tg_line *line,
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_line_contains_point(line, geom->point); 
         case TG_LINESTRING: 
@@ -6128,7 +6179,7 @@ static bool line_contains_geom(struct tg_line *line,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return line_contains_base_geom(line, geom);
         case BASE_POINT:
@@ -6152,8 +6203,8 @@ static bool point_contains_geom(struct tg_point point,
 static bool point_contains_base_geom(struct tg_point point,
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_point_contains_point(point, geom->point); 
         case TG_LINESTRING: 
@@ -6216,8 +6267,8 @@ static bool geom_contains_iter(const struct tg_geom *geom, void *udata) {
 static bool base_geom_contains_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT:
             return point_contains_geom(geom->point, other);
         case TG_LINESTRING:
@@ -6242,7 +6293,7 @@ static bool point_contains_geom(struct tg_point point,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return point_contains_base_geom(point, geom);
         case BASE_POINT:
@@ -6268,7 +6319,7 @@ static bool point_contains_geom(struct tg_point point,
 /// @see GeometryPredicates
 bool tg_geom_contains(const struct tg_geom *geom, const struct tg_geom *other) {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return base_geom_contains_geom(geom, other);
         case BASE_POINT: 
@@ -6309,8 +6360,8 @@ static bool point_touches_geom(struct tg_point point,
 static bool point_touches_base_geom(struct tg_point point,
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_point_touches_point(point, geom->point); 
         case TG_LINESTRING: 
@@ -6338,7 +6389,7 @@ static bool point_touches_geom(struct tg_point point,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return point_touches_base_geom(point, geom);
         case BASE_POINT:
@@ -6361,8 +6412,8 @@ static bool line_touches_geom(struct tg_line *line,
 static bool line_touches_base_geom(struct tg_line *line,
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_line_touches_point(line, geom->point); 
         case TG_LINESTRING: 
@@ -6390,7 +6441,7 @@ static bool line_touches_geom(struct tg_line *line,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return line_touches_base_geom(line, geom);
         case BASE_POINT:
@@ -6413,8 +6464,8 @@ static bool poly_touches_geom(struct tg_poly *poly,
 static bool poly_touches_base_geom(struct tg_poly *poly, 
     const struct tg_geom *geom)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return tg_poly_touches_point(poly, geom->point); 
         case TG_LINESTRING: 
@@ -6446,7 +6497,7 @@ static bool poly_touches_geom(struct tg_poly *poly,
     const struct tg_geom *geom)
 {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return poly_touches_base_geom(poly, geom);
         case BASE_POINT:
@@ -6466,8 +6517,8 @@ static bool poly_touches_geom(struct tg_poly *poly,
 static bool base_geom_touches_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
-    if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
-        switch (geom->head.type) {
+    if ((getflags(geom)&IS_EMPTY) != IS_EMPTY) {
+        switch (gettype(geom)) {
         case TG_POINT: 
             return point_touches_geom(geom->point, other);
         case TG_LINESTRING: 
@@ -6501,7 +6552,7 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
 /// @see GeometryPredicates
 bool tg_geom_touches(const struct tg_geom *geom, const struct tg_geom *other) {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return base_geom_touches_geom(geom, other);
         case BASE_POINT: 
@@ -6534,9 +6585,10 @@ bool tg_point_touches_geom(struct tg_point a, const struct tg_geom *b) {
 /// @see GeometryPredicates
 bool tg_geom_covers_point(const struct tg_geom *a, struct tg_point b) {
     struct boxed_point bpoint = {
-        .head = { .base = BASE_POINT, .type = TG_POINT },
         .point = b,
     };
+    setbase(&bpoint, BASE_POINT);
+    settype(&bpoint, TG_POINT);
     return tg_geom_covers(a, (struct tg_geom*)&bpoint);
 }
 
@@ -6550,9 +6602,10 @@ bool tg_geom_covers_xy(const struct tg_geom *a, double x, double y) {
 /// @see GeometryPredicates
 bool tg_geom_intersects_point(const struct tg_geom *a, struct tg_point b) {
     struct boxed_point bpoint = {
-        .head = { .base = BASE_POINT, .type = TG_POINT },
         .point = b,
     };
+    setbase(&bpoint, BASE_POINT);
+    settype(&bpoint, TG_POINT);
     return tg_geom_intersects(a, (struct tg_geom*)&bpoint);
 }
 
@@ -6570,7 +6623,7 @@ bool tg_geom_intersects_xy(const struct tg_geom *a, double x, double y) {
 /// tg_geom_new_polygon_z() or from a parsed source like WKT "POLYGON Z ...".
 /// @see tg_geom_num_extra_coords()
 const double *tg_geom_extra_coords(const struct tg_geom *geom) {
-    if (!geom || geom->head.base != BASE_GEOM || geom->head.type == TG_POINT) {
+    if (!geom || getbase(geom) != BASE_GEOM || gettype(geom) == TG_POINT) {
         return NULL;
     }
     return geom->coords;
@@ -6581,7 +6634,7 @@ const double *tg_geom_extra_coords(const struct tg_geom *geom) {
 /// @return The number of extra coordinates, or zero if none.
 /// @see tg_geom_extra_coords()
 int tg_geom_num_extra_coords(const struct tg_geom *geom) {
-    if (!geom || geom->head.base != BASE_GEOM || geom->head.type == TG_POINT) {
+    if (!geom || getbase(geom) != BASE_GEOM || gettype(geom) == TG_POINT) {
         return 0;
     }
     return geom->ncoords;
@@ -6596,8 +6649,8 @@ int tg_geom_num_extra_coords(const struct tg_geom *geom) {
 int tg_geom_dims(const struct tg_geom *geom) {
     if (!geom) return 0;
     int dims = 2;
-    if ((geom->head.flags&HAS_Z) == HAS_Z) dims++;
-    if ((geom->head.flags&HAS_M) == HAS_M) dims++;
+    if ((getflags(geom)&HAS_Z) == HAS_Z) dims++;
+    if ((getflags(geom)&HAS_M) == HAS_M) dims++;
     return dims;
 }
 
@@ -6605,14 +6658,14 @@ int tg_geom_dims(const struct tg_geom *geom) {
 /// @param geom Input geometry
 /// @return True or false
 bool tg_geom_has_z(const struct tg_geom *geom) {
-    return (geom && (geom->head.flags&HAS_Z) == HAS_Z);
+    return (geom && (getflags(geom)&HAS_Z) == HAS_Z);
 }
 
 /// Tests whether a geometry has M coordinates.
 /// @param geom Input geometry
 /// @return True or false
 bool tg_geom_has_m(const struct tg_geom *geom) {
-    return (geom && (geom->head.flags&HAS_M) == HAS_M);
+    return (geom && (getflags(geom)&HAS_M) == HAS_M);
 }
 
 /// Get the Z coordinate of a Point geometry.
@@ -6620,7 +6673,7 @@ bool tg_geom_has_m(const struct tg_geom *geom) {
 /// @return For a TG_POINT geometry, returns the Z coordinate.
 /// @return For everything else returns zero.
 double tg_geom_z(const struct tg_geom *geom) {
-    if (!geom || geom->head.base != BASE_GEOM || geom->head.type != TG_POINT) {
+    if (!geom || getbase(geom) != BASE_GEOM || gettype(geom) != TG_POINT) {
         return 0;
     }
     return geom->z;
@@ -6631,7 +6684,7 @@ double tg_geom_z(const struct tg_geom *geom) {
 /// @return For a TG_POINT geometry, returns the M coordinate.
 /// @return For everything else returns zero.
 double tg_geom_m(const struct tg_geom *geom) {
-    if (!geom || geom->head.base != BASE_GEOM || geom->head.type != TG_POINT) {
+    if (!geom || getbase(geom) != BASE_GEOM || gettype(geom) != TG_POINT) {
         return 0;
     }
     return geom->m;
@@ -7798,7 +7851,7 @@ static struct tg_geom *make_parse_error(const char *format, ...) {
         tg_free(error);
         return NULL;
     }
-    geom->head.flags |= IS_ERROR;
+    setflags(geom, IS_ERROR);
     geom->error = error;
     return geom;
 }
@@ -7848,7 +7901,7 @@ static struct tg_geom *make_parse_error(const char *format, ...) {
 /// @see GeometryParsing
 const char *tg_geom_error(const struct tg_geom *geom) {
     if (!geom) return "no memory";
-    return (geom->head.flags&IS_ERROR) == IS_ERROR ? geom->error : NULL;
+    return (getflags(geom)&IS_ERROR) == IS_ERROR ? geom->error : NULL;
 }
 
 static bool buf_append_json_pair(struct tg_buf *buf, struct json key, 
@@ -8034,7 +8087,7 @@ def_vec(struct gvec, struct tg_geom*, gvec_append, 1)
     goto done; \
 done: \
     if (!geom) goto fail; \
-    geom->head.flags |= flags; \
+    setflags(geom, flags); \
     if (extra) geom->xjson = extra; \
     cleanup; \
     return geom; \
@@ -8487,8 +8540,8 @@ static struct tg_geom *parse_geojson_geometrycollection(struct json json,
             child = NULL;
             goto fail;
         }
-        if ((child->head.flags&IS_FEATURE) == IS_FEATURE ||
-            (child->head.flags&IS_FEATURE_COL) == IS_FEATURE_COL)
+        if ((getflags(child)&IS_FEATURE) == IS_FEATURE ||
+            (getflags(child)&IS_FEATURE_COL) == IS_FEATURE_COL)
         {
             gerr = make_parse_error("'geometries' must only contain objects "
                     "with the 'type' of Point, LineString, Polygon, "
@@ -8530,16 +8583,16 @@ static struct tg_geom *parse_geojson_feature(struct json json, enum tg_index ix)
         geom = NULL;
         goto fail;
     }
-    if ((geom->head.flags&IS_FEATURE) == IS_FEATURE ||
-        (geom->head.flags&IS_FEATURE_COL) == IS_FEATURE_COL)
+    if ((getflags(geom)&IS_FEATURE) == IS_FEATURE ||
+        (getflags(geom)&IS_FEATURE_COL) == IS_FEATURE_COL)
     {
         gerr = make_parse_error("'geometry' must only contain an object with "
             "the 'type' of Point, LineString, Polygon, MultiPoint, "
             "MultiLineString, MultiPolygon, or GeometryCollection");
         goto fail;
     }
-    geom->head.flags |= IS_FEATURE;
-    if (geom->head.base == BASE_GEOM && geom->xjson) {
+    setflags(geom, IS_FEATURE);
+    if (getbase(geom) == BASE_GEOM && geom->xjson) {
         // combine the two together as '[feature-extra,geometry-extra]'
         size_t xn0 = extra ? strlen(extra) : 0;
         size_t xn1 = strlen(geom->xjson);
@@ -8577,7 +8630,7 @@ static struct tg_geom *parse_geojson_featurecollection(struct json json,
             gerr = child;
             goto fail;
         }
-        if ((child->head.flags&IS_FEATURE) != IS_FEATURE) {
+        if ((getflags(child)&IS_FEATURE) != IS_FEATURE) {
             gerr = make_parse_error("'features' must only contain objects "
                 "with the 'type' of Feature");
             tg_geom_free(child);
@@ -8591,7 +8644,7 @@ static struct tg_geom *parse_geojson_featurecollection(struct json json,
     }
     geom = tg_geom_new_geometrycollection(
         (struct tg_geom const*const*)geoms.data, geoms.len);
-    if (geom) geom->head.flags |= IS_FEATURE_COL;
+    if (geom) setflags(geom, IS_FEATURE_COL);
     PARSE_GEOJSON_BASIC_TAIL({
         if (geoms.data) {
             for (size_t i = 0; i < geoms.len; i++) {
@@ -8703,7 +8756,7 @@ struct tg_geom *tg_parse_geojsonn_ix(const char *geojson, size_t len,
         geom = parse_geojson(json, false, ix);
     }
     if (!geom) return NULL;
-    if ((geom->head.flags&IS_ERROR) == IS_ERROR) {
+    if ((getflags(geom)&IS_ERROR) == IS_ERROR) {
         struct tg_geom *gerr = make_parse_error("ParseError: %s", geom->error);
         tg_geom_free(geom);
         return gerr;
@@ -11495,16 +11548,16 @@ static void write_geom_point_geojson(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_string(wr, "{\"type\":\"Point\",\"coordinates\":");
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_string(wr, "[]");
     } else {
-        if ((geom->head.flags&HAS_Z) == HAS_Z) {
-            if ((geom->head.flags&HAS_M) == HAS_M) {
+        if ((getflags(geom)&HAS_Z) == HAS_Z) {
+            if ((getflags(geom)&HAS_M) == HAS_M) {
                 write_posn_geojson_4(wr, geom->point, geom->z, geom->m);
             } else {
                 write_posn_geojson_3(wr, geom->point, geom->z);
             }
-        } else if ((geom->head.flags&HAS_M) == HAS_M) {
+        } else if ((getflags(geom)&HAS_M) == HAS_M) {
             write_posn_geojson_3(wr, geom->point, geom->m);
         } else {
             write_posn_geojson(wr, geom->point);
@@ -11517,7 +11570,7 @@ static void write_geom_linestring_geojson(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_string(wr, "{\"type\":\"LineString\",\"coordinates\":");
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_string(wr, "[]");
     } else {
         switch (tg_geom_dims(geom)) {
@@ -11541,7 +11594,7 @@ static void write_geom_polygon_geojson(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_string(wr, "{\"type\":\"Polygon\",\"coordinates\":");
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_string(wr, "[]");
     } else {
         switch (tg_geom_dims(geom)) {
@@ -11668,7 +11721,7 @@ static void write_geom_geojson(const struct tg_geom *geom, struct writer *wr);
 static void write_geom_geometrycollection_geojson(const struct tg_geom *geom,
     struct writer *wr)
 {
-    if ((geom->head.flags&IS_FEATURE_COL) == IS_FEATURE_COL) {
+    if ((getflags(geom)&IS_FEATURE_COL) == IS_FEATURE_COL) {
         write_string(wr, "{\"type\":\"FeatureCollection\",\"features\":[");
     } else {
         write_string(wr, "{\"type\":\"GeometryCollection\",\"geometries\":[");
@@ -11685,15 +11738,15 @@ static void write_geom_geometrycollection_geojson(const struct tg_geom *geom,
 static void write_base_geom_geojson(const struct tg_geom *geom,
     struct writer *wr)
 {
-    if ((geom->head.flags&IS_ERROR) == IS_ERROR) {
+    if ((getflags(geom)&IS_ERROR) == IS_ERROR) {
         // sigh, just write us an empty point ...
         write_string(wr, "{\"type\":\"Point\",\"coordinates\":[]}");
         return;
     }
-    bool is_feat = (geom->head.flags&IS_FEATURE) == IS_FEATURE;
+    bool is_feat = (getflags(geom)&IS_FEATURE) == IS_FEATURE;
     struct json fjson = { 0 };
     struct json gjson = { 0 };
-    const char *xjson = geom->head.base == BASE_GEOM ? geom->xjson : NULL;
+    const char *xjson = getbase(geom) == BASE_GEOM ? geom->xjson : NULL;
     if (is_feat) {
         if (xjson) {
             struct json json = json_parse(xjson);
@@ -11717,10 +11770,10 @@ static void write_base_geom_geojson(const struct tg_geom *geom,
             gjson = json_ensure(json_parse(xjson));
         }
     }
-    if (is_feat && (geom->head.flags&IS_UNLOCATED) == IS_UNLOCATED) {
+    if (is_feat && (getflags(geom)&IS_UNLOCATED) == IS_UNLOCATED) {
         write_string(wr, "null");
     } else {
-        switch (geom->head.type) {
+        switch (gettype(geom)) {
         case TG_POINT:
             write_geom_point_geojson(geom, wr);
             break;
@@ -11778,7 +11831,7 @@ static void write_base_geom_geojson(const struct tg_geom *geom,
         }
         if (!wrote_props) {
             write_string(wr, ",\"properties\":");
-            if ((geom->head.flags&HAS_NULL_PROPS)== HAS_NULL_PROPS){
+            if ((getflags(geom)&HAS_NULL_PROPS)== HAS_NULL_PROPS){
                 write_string(wr, "null");
             } else {
                 write_string(wr, "{}");
@@ -11791,15 +11844,15 @@ static void write_base_geom_geojson(const struct tg_geom *geom,
 static void write_point_geojson(const struct boxed_point *point,
     struct writer *wr)
 {
-    if ((point->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(point)&IS_FEATURE) == IS_FEATURE) {
         write_string(wr, "{\"type\":\"Feature\",\"geometry\":");
     }
     write_string(wr, "{\"type\":\"Point\",\"coordinates\":");
     write_posn_geojson(wr, point->point);
     write_char(wr, '}');
-    if ((point->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(point)&IS_FEATURE) == IS_FEATURE) {
         write_string(wr, ",\"properties\":");
-        if ((point->head.flags&HAS_NULL_PROPS)== HAS_NULL_PROPS){
+        if ((getflags(point)&HAS_NULL_PROPS)== HAS_NULL_PROPS){
             write_string(wr, "null}");
         } else {
             write_string(wr, "{}}");
@@ -11809,15 +11862,15 @@ static void write_point_geojson(const struct boxed_point *point,
 
 static void write_line_geojson(const struct tg_line *line, struct writer *wr) {
     struct tg_ring *ring = (struct tg_ring*)line;
-    if ((ring->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(ring)&IS_FEATURE) == IS_FEATURE) {
         write_string(wr, "{\"type\":\"Feature\",\"geometry\":");
     }
     write_string(wr, "{\"type\":\"LineString\",\"coordinates\":");
     write_ring_points_geojson(wr, ring);
     write_char(wr, '}');
-    if ((ring->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(ring)&IS_FEATURE) == IS_FEATURE) {
         write_string(wr, ",\"properties\":");
-        if ((ring->head.flags&HAS_NULL_PROPS)== HAS_NULL_PROPS){
+        if ((getflags(ring)&HAS_NULL_PROPS)== HAS_NULL_PROPS){
             write_string(wr, "null}");
         } else {
             write_string(wr, "{}}");
@@ -11826,15 +11879,15 @@ static void write_line_geojson(const struct tg_line *line, struct writer *wr) {
 }
 
 static void write_ring_geojson(const struct tg_ring *ring, struct writer *wr) {
-    if ((ring->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(ring)&IS_FEATURE) == IS_FEATURE) {
         write_string(wr, "{\"type\":\"Feature\",\"geometry\":");
     }
     write_string(wr, "{\"type\":\"Polygon\",\"coordinates\":[");
     write_ring_points_geojson(wr, ring);
     write_string(wr, "]}");
-    if ((ring->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(ring)&IS_FEATURE) == IS_FEATURE) {
         write_string(wr, ",\"properties\":");
-        if ((ring->head.flags&HAS_NULL_PROPS)== HAS_NULL_PROPS){
+        if ((getflags(ring)&HAS_NULL_PROPS)== HAS_NULL_PROPS){
             write_string(wr, "null}");
         } else {
             write_string(wr, "{}}");
@@ -11843,15 +11896,15 @@ static void write_ring_geojson(const struct tg_ring *ring, struct writer *wr) {
 }
 
 static void write_poly_geojson(const struct tg_poly *poly, struct writer *wr) {
-    if ((poly->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(poly)&IS_FEATURE) == IS_FEATURE) {
         write_string(wr, "{\"type\":\"Feature\",\"geometry\":");
     }
     write_string(wr, "{\"type\":\"Polygon\",\"coordinates\":");
     write_poly_points_geojson(wr, poly);
     write_char(wr, '}');
-    if ((poly->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(poly)&IS_FEATURE) == IS_FEATURE) {
         write_string(wr, ",\"properties\":");
-        if ((poly->head.flags&HAS_NULL_PROPS)== HAS_NULL_PROPS){
+        if ((getflags(poly)&HAS_NULL_PROPS)== HAS_NULL_PROPS){
             write_string(wr, "null}");
         } else {
             write_string(wr, "{}}");
@@ -11860,7 +11913,7 @@ static void write_poly_geojson(const struct tg_poly *poly, struct writer *wr) {
 }
 
 static void write_geom_geojson(const struct tg_geom *geom, struct writer *wr) {
-    switch (geom->head.base) {
+    switch (getbase(geom)) {
     case BASE_GEOM:
         write_base_geom_geojson(geom, wr);
         break;
@@ -11921,8 +11974,8 @@ size_t tg_geom_geojson(const struct tg_geom *geom, char *dst, size_t n) {
 /// @note The returned string does not need to be freed.
 /// @see tg_parse_geojson()
 const char *tg_geom_extra_json(const struct tg_geom *geom) {
-    return geom && geom->head.base == BASE_GEOM &&
-          (geom->head.flags&IS_ERROR) != IS_ERROR ? geom->xjson : NULL;
+    return geom && getbase(geom) == BASE_GEOM &&
+          (getflags(geom)&IS_ERROR) != IS_ERROR ? geom->xjson : NULL;
 }
 
 //////////////////
@@ -12144,7 +12197,7 @@ static struct tg_geom *parse_wkt_point(const char *wkt, long len,
     } else {
         geom = tg_geom_new_point_zm(pt, posn[2], posn[3]);
     }
-    if (geom) geom->head.flags |= flags;
+    if (geom) setflags(geom, flags);
     return geom;
 bad_dims:
     return make_parse_error("%s", err_for_wkt_posn(dims));
@@ -12804,7 +12857,7 @@ struct tg_geom *tg_parse_wktn_ix(const char *wkt, size_t len,
 {
     struct tg_geom *geom = parse_wkt(wkt, len, ix);
     if (!geom) return NULL;
-    if ((geom->head.flags&IS_ERROR) == IS_ERROR) {
+    if ((getflags(geom)&IS_ERROR) == IS_ERROR) {
         struct tg_geom *gerr = make_parse_error("ParseError: %s", geom->error);
         tg_geom_free(geom);
         return gerr;
@@ -12980,8 +13033,8 @@ static void write_poly_wkt(const struct tg_poly *poly, struct writer *wr) {
 }
 
 static void write_zm_def_wkt(struct writer *wr, const struct tg_geom *geom) {
-    if ((geom->head.flags&HAS_M) == HAS_M && 
-               (geom->head.flags&HAS_Z) != HAS_Z)
+    if ((getflags(geom)&HAS_M) == HAS_M && 
+               (getflags(geom)&HAS_Z) != HAS_Z)
     {
         write_string(wr, " M");
     }
@@ -12992,17 +13045,17 @@ static void write_geom_point_wkt(const struct tg_geom *geom,
 {
     write_string(wr, "POINT");
     write_zm_def_wkt(wr, geom);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_string(wr, " EMPTY");
     } else {
         write_char(wr, '(');
-        if ((geom->head.flags&HAS_Z) == HAS_Z) {
-            if ((geom->head.flags&HAS_M) == HAS_M) {
+        if ((getflags(geom)&HAS_Z) == HAS_Z) {
+            if ((getflags(geom)&HAS_M) == HAS_M) {
                 write_posn_wkt_4(wr, geom->point, geom->z, geom->m);
             } else {
                 write_posn_wkt_3(wr, geom->point, geom->z);
             }
-        } else if ((geom->head.flags&HAS_M) == HAS_M) {
+        } else if ((getflags(geom)&HAS_M) == HAS_M) {
             write_posn_wkt_3(wr, geom->point, geom->m);
         } else {
             write_posn_wkt(wr, geom->point);
@@ -13016,7 +13069,7 @@ static void write_geom_linestring_wkt(const struct tg_geom *geom,
 {
     write_string(wr, "LINESTRING");
     write_zm_def_wkt(wr, geom);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_string(wr, " EMPTY");
         return;
     }
@@ -13042,7 +13095,7 @@ static void write_geom_polygon_wkt(const struct tg_geom *geom,
 {
     write_string(wr, "POLYGON");
     write_zm_def_wkt(wr, geom);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_string(wr, " EMPTY");
         return;
     }
@@ -13068,7 +13121,7 @@ static void write_geom_multipoint_wkt(const struct tg_geom *geom,
 {
     write_string(wr, "MULTIPOINT");
     write_zm_def_wkt(wr, geom);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY || !geom->multi ||
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY || !geom->multi ||
         !geom->multi->ngeoms)
     {
         write_string(wr, " EMPTY");
@@ -13106,7 +13159,7 @@ static void write_geom_multilinestring_wkt(const struct tg_geom *geom,
 {
     write_string(wr, "MULTILINESTRING");
     write_zm_def_wkt(wr, geom);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY || !geom->multi ||
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY || !geom->multi ||
         !geom->multi->ngeoms)
     {
         write_string(wr, " EMPTY");
@@ -13149,7 +13202,7 @@ static void write_geom_multipolygon_wkt(const struct tg_geom *geom,
 {
     write_string(wr, "MULTIPOLYGON");
     write_zm_def_wkt(wr, geom);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY || !geom->multi ||
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY || !geom->multi ||
         !geom->multi->ngeoms)
     {
         write_string(wr, " EMPTY");
@@ -13193,7 +13246,7 @@ static void write_geom_geometrycollection_wkt(const struct tg_geom *geom,
 {
     write_string(wr, "GEOMETRYCOLLECTION");
     write_zm_def_wkt(wr, geom);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY || !geom->multi ||
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY || !geom->multi ||
         !geom->multi->ngeoms)
     {
         write_string(wr, " EMPTY");
@@ -13209,7 +13262,7 @@ static void write_geom_geometrycollection_wkt(const struct tg_geom *geom,
 }
 
 static void write_base_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
-    switch (geom->head.type) {
+    switch (gettype(geom)) {
     case TG_POINT:
         write_geom_point_wkt(geom, wr);
         break;
@@ -13235,7 +13288,7 @@ static void write_base_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
 }
 
 static void write_geom_wkt(const struct tg_geom *geom, struct writer *wr) {
-    switch (geom->head.base) {
+    switch (getbase(geom)) {
     case BASE_GEOM:
         write_base_geom_wkt(geom, wr);
         break;
@@ -13590,9 +13643,9 @@ static size_t parse_wkb(const uint8_t *wkb, size_t len, size_t i, int depth,
 static bool wkb_type_match(const struct tg_geom *child, enum tg_geom_type type, 
     bool z, bool m)
 {
-    bool child_has_z = (child->head.flags&HAS_Z) == HAS_Z;
-    bool child_has_m = (child->head.flags&HAS_M) == HAS_M;
-    return child->head.type == type && child_has_z == z && child_has_m == m;
+    bool child_has_z = (getflags(child)&HAS_Z) == HAS_Z;
+    bool child_has_m = (getflags(child)&HAS_M) == HAS_M;
+    return gettype(child) == type && child_has_z == z && child_has_m == m;
 }
 
 static size_t parse_wkb_multipoint(const uint8_t *wkb, size_t len, size_t i,
@@ -13977,7 +14030,7 @@ struct tg_geom *tg_parse_wkb_ix(const uint8_t *wkb, size_t len,
     struct tg_geom *geom = NULL;
     parse_wkb(wkb, len, 0, 0, ix, &geom);
     if (!geom) return NULL;
-    if ((geom->head.flags&IS_ERROR) == IS_ERROR) {
+    if ((getflags(geom)&IS_ERROR) == IS_ERROR) {
         struct tg_geom *gerr = make_parse_error("ParseError: %s", geom->error);
         tg_geom_free(geom);
         return gerr;
@@ -13986,14 +14039,14 @@ struct tg_geom *tg_parse_wkb_ix(const uint8_t *wkb, size_t len,
 }
 
 static void write_wkb_type(struct writer *wr, const struct head *head) {
-    uint32_t type = head->type;
-    if ((head->flags&HAS_Z) == HAS_Z) {
-        if ((head->flags&HAS_M) == HAS_M) {
+    uint32_t type = gettype(head);
+    if ((getflags(head)&HAS_Z) == HAS_Z) {
+        if ((getflags(head)&HAS_M) == HAS_M) {
             type += 3000;
         } else {
             type += 1000;
         }
-    } else if ((head->flags&HAS_M) == HAS_M) {
+    } else if ((getflags(head)&HAS_M) == HAS_M) {
         type += 2000;
     }
     write_byte(wr, 1);
@@ -14188,16 +14241,16 @@ static void write_poly_wkb(struct tg_poly *poly, struct writer *wr) {
 static void write_geom_point_wkb(const struct tg_geom *geom, struct writer *wr)
 {
     write_wkb_type(wr, &geom->head);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_posn_wkb(wr, (struct tg_point){ NAN, NAN });
     } else {
-        if ((geom->head.flags&HAS_Z) == HAS_Z) {
-            if ((geom->head.flags&HAS_M) == HAS_M) {
+        if ((getflags(geom)&HAS_Z) == HAS_Z) {
+            if ((getflags(geom)&HAS_M) == HAS_M) {
                 write_posn_wkb_4(wr, geom->point, geom->z, geom->m);
             } else {
                 write_posn_wkb_3(wr, geom->point, geom->z);
             }
-        } else if ((geom->head.flags&HAS_M) == HAS_M) {
+        } else if ((getflags(geom)&HAS_M) == HAS_M) {
             write_posn_wkb_3(wr, geom->point, geom->m);
         } else {
             write_posn_wkb(wr, geom->point);
@@ -14209,7 +14262,7 @@ static void write_geom_linestring_wkb(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_wkb_type(wr, &geom->head);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_uint32le(wr, 0);
         return;
     }
@@ -14232,7 +14285,7 @@ static void write_geom_polygon_wkb(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_wkb_type(wr, &geom->head);
-    if ((geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if ((getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_uint32le(wr, 0);
         return;
     }
@@ -14255,7 +14308,7 @@ static void write_geom_multipoint_wkb(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_wkb_type(wr, &geom->head);
-    if (!geom->multi || (geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if (!geom->multi || (getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_uint32le(wr, 0);
         return;
     }
@@ -14265,10 +14318,9 @@ static void write_geom_multipoint_wkb(const struct tg_geom *geom,
     int ncoords = geom->ncoords;
     int j = 0;
     write_uint32le(wr, geom->multi->ngeoms);
-    struct head head = { 
-        .type = TG_POINT, 
-        .flags = (geom->head.flags&(HAS_Z|HAS_M)),
-    };
+    struct head head = { 0 };
+    settype(&head, TG_POINT);
+    setflags(&head, getflags(geom)&(HAS_Z|HAS_M));
     for (int i = 0; i < geom->multi->ngeoms; i++) {
         struct tg_point point = tg_geom_point(geom->multi->geoms[i]);
         write_wkb_type(wr, &head);
@@ -14293,16 +14345,15 @@ static void write_geom_multilinestring_wkb(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_wkb_type(wr, &geom->head);
-    if (!geom->multi || (geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if (!geom->multi || (getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_uint32le(wr, 0);
         return;
     }
     int dims = tg_geom_dims(geom);
     write_uint32le(wr, geom->multi->ngeoms);
-    struct head head = { 
-        .type = TG_LINESTRING, 
-        .flags = (geom->head.flags&(HAS_Z|HAS_M)),
-    };
+    struct head head = { 0 };
+    settype(&head, TG_LINESTRING);
+    setflags(&head, getflags(geom)&(HAS_Z|HAS_M));
     const double *pcoords = geom->coords;
     int ncoords = geom->ncoords;
     int n;
@@ -14334,16 +14385,15 @@ static void write_geom_multipolygon_wkb(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_wkb_type(wr, &geom->head);
-    if (!geom->multi || (geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if (!geom->multi || (getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_uint32le(wr, 0);
         return;
     }
     int dims = tg_geom_dims(geom);
     write_uint32le(wr, geom->multi->ngeoms);
-    struct head head = { 
-        .type = TG_POLYGON, 
-        .flags = (geom->head.flags&(HAS_Z|HAS_M)),
-    };
+    struct head head = { 0 };
+    settype(&head, TG_POLYGON);
+    setflags(&head, getflags(geom)&(HAS_Z|HAS_M));
     const double *pcoords = geom->coords;
     int ncoords = geom->ncoords;
     int n;
@@ -14376,7 +14426,7 @@ static void write_geom_geometrycollection_wkb(const struct tg_geom *geom,
     struct writer *wr)
 {
     write_wkb_type(wr, &geom->head);
-    if (!geom->multi || (geom->head.flags&IS_EMPTY) == IS_EMPTY) {
+    if (!geom->multi || (getflags(geom)&IS_EMPTY) == IS_EMPTY) {
         write_uint32le(wr, 0);
         return;
     }
@@ -14387,7 +14437,7 @@ static void write_geom_geometrycollection_wkb(const struct tg_geom *geom,
 }
 
 static void write_base_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
-    switch (geom->head.type) {
+    switch (gettype(geom)) {
     case TG_POINT:
         write_geom_point_wkb(geom, wr);
         break;
@@ -14413,7 +14463,7 @@ static void write_base_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
 }
 
 static void write_geom_wkb(const struct tg_geom *geom, struct writer *wr) {
-    switch (geom->head.base) {
+    switch (getbase(geom)) {
     case BASE_GEOM:
         write_base_geom_wkb(geom, wr);
         break;
@@ -14578,7 +14628,7 @@ struct tg_geom *tg_parse_hexn_ix(const char *hex, size_t len,
 {
     struct tg_geom *geom = parse_hex(hex, len, ix);
     if (!geom) return NULL;
-    if ((geom->head.flags&IS_ERROR) == IS_ERROR) {
+    if ((getflags(geom)&IS_ERROR) == IS_ERROR) {
         struct tg_geom *gerr = make_parse_error("ParseError: %s", geom->error);
         tg_geom_free(geom);
         return gerr;
@@ -15050,13 +15100,13 @@ bool tg_geom_overlaps(const struct tg_geom *a, const struct tg_geom *b) {
 int tg_geom_de9im_dims(const struct tg_geom *geom) {
     int dims = -1;
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_POINT: return 0;
         case BASE_LINE:  return 1;
         case BASE_RING:  return 2;
         case BASE_POLY:  return 2;
         case BASE_GEOM:
-            switch (geom->head.type) {
+            switch (gettype(geom)) {
             case TG_POINT:           return 0;
             case TG_LINESTRING:      return 1;
             case TG_POLYGON:         return 2;
@@ -15097,7 +15147,7 @@ struct tg_ring *tg_ring_copy(const struct tg_ring *ring) {
     memcpy(ring2, ring, size);
     rc_init(&ring2->head.rc);
     rc_retain(&ring2->head.rc);
-    ring2->head.noheap = 0;
+    setnoheap(ring2, 0);
     if (ring->ystripes) {
         ring2->ystripes = tg_malloc(ring->ystripes->memsz);
         if (!ring2->ystripes) {
@@ -15131,7 +15181,7 @@ struct tg_poly *tg_poly_copy(const struct tg_poly *poly) {
     if (!poly) {
         return NULL;
     }
-    if (poly->head.base == BASE_RING) {
+    if (getbase(&poly->head) == BASE_RING) {
         return (struct tg_poly*)tg_ring_copy((struct tg_ring*)poly);
     }
     struct tg_poly *poly2 = tg_malloc(sizeof(struct tg_poly));
@@ -15142,7 +15192,7 @@ struct tg_poly *tg_poly_copy(const struct tg_poly *poly) {
     memcpy(&poly2->head, &poly->head, sizeof(struct head));
     rc_init(&poly2->head.rc);
     rc_retain(&poly2->head.rc);
-    poly2->head.noheap = 0;
+    setnoheap(poly2, 0);
     poly2->exterior = tg_ring_copy(poly->exterior);
     if (!poly2->exterior) {
         goto fail;
@@ -15176,8 +15226,8 @@ static struct tg_geom *geom_copy(const struct tg_geom *geom) {
     memcpy(&geom2->head, &geom->head, sizeof(struct head));
     rc_init(&geom2->head.rc);
     rc_retain(&geom2->head.rc);
-    geom2->head.noheap = 0;
-    switch (geom->head.type) {
+    setnoheap(geom2, 0);
+    switch (gettype(geom)) {
     case TG_POINT:
         geom2->point.x = geom->point.x;
         geom2->point.y = geom->point.y;
@@ -15243,7 +15293,7 @@ static struct tg_geom *geom_copy(const struct tg_geom *geom) {
         }
         break;
     }
-    if (geom->head.type != TG_POINT && geom->coords) {
+    if (gettype(geom) != TG_POINT && geom->coords) {
         geom2->coords = tg_malloc(sizeof(double)*geom->ncoords);
         if (!geom2->coords) {
             goto fail;
@@ -15274,7 +15324,7 @@ static struct boxed_point *boxed_point_copy(const struct boxed_point *point) {
     memcpy(point2, point, sizeof(struct boxed_point));
     rc_init(&point2->head.rc);
     rc_retain(&point2->head.rc);
-    point2->head.noheap = 0;
+    setnoheap(point2, 0);
     return point2;
 }
 
@@ -15287,7 +15337,7 @@ static struct boxed_point *boxed_point_copy(const struct boxed_point *point) {
 /// @see GeometryConstructors
 struct tg_geom *tg_geom_copy(const struct tg_geom *geom) {
     if (geom) {
-        switch (geom->head.base) {
+        switch (getbase(geom)) {
         case BASE_GEOM:
             return geom_copy(geom);
         case BASE_POINT:
@@ -15473,7 +15523,7 @@ struct tg_geom *tg_geom_new_error(const char *error) {
 /// _undocumented_
 void tg_geom_setnoheap(struct tg_geom *geom) {
     geom->head.rc = 0;
-    geom->head.noheap = 1;
+    setnoheap(geom, 1);
 }
 
 /// Parse GeoBIN binary using provided indexing option.
@@ -15569,7 +15619,7 @@ static size_t parse_geobin(const uint8_t *geobin, size_t len, size_t i,
             *g = 0;
             return PARSE_FAIL;
         }
-        geom->head.flags |= IS_FEATURE_COL;
+        setflags(geom, IS_FEATURE_COL);
     } else {
         i = parse_wkb(geobin, len, i, depth, ix, &geom);
     }
@@ -15577,15 +15627,15 @@ static size_t parse_geobin(const uint8_t *geobin, size_t len, size_t i,
         *g = geom;
         return PARSE_FAIL;
     }
-    if ((xjsonlen > 0 || head == 0x03) && geom->head.base != BASE_GEOM) {
+    if ((xjsonlen > 0 || head == 0x03) && getbase(geom) != BASE_GEOM) {
         // Wrap base in tg_geom
-        struct tg_geom *g2 = geom_new(geom->head.type);
+        struct tg_geom *g2 = geom_new(gettype(geom));
         if (!g2) {
             tg_geom_free(geom);
             *g = 0;
             return PARSE_FAIL;
         }
-        if (geom->head.base == BASE_POINT) {
+        if (getbase(geom) == BASE_POINT) {
             g2->point = ((struct boxed_point*)geom)->point;
             boxed_point_free((struct boxed_point*)geom);
         } else {
@@ -15594,7 +15644,7 @@ static size_t parse_geobin(const uint8_t *geobin, size_t len, size_t i,
         geom = g2;
     }
     if (head == 0x03) {
-        geom->head.flags |= IS_FEATURE;
+        setflags(geom, IS_FEATURE);
     }
     if (xjsonlen > 0) {
         geom->xjson = tg_malloc(xjsonlen+1);
@@ -15626,7 +15676,7 @@ struct tg_geom *tg_parse_geobin_ix(const uint8_t *geobin, size_t len,
     struct tg_geom *geom = NULL;
     parse_geobin(geobin, len, 0, 0, ix, &geom);
     if (!geom) return NULL;
-    if ((geom->head.flags&IS_ERROR) == IS_ERROR) {
+    if ((getflags(geom)&IS_ERROR) == IS_ERROR) {
         struct tg_geom *gerr = make_parse_error("ParseError: %s", geom->error);
         tg_geom_free(geom);
         return gerr;
@@ -15643,11 +15693,11 @@ static void write_base_geom_geobin(const struct tg_geom *geom,
     const char *xjson = tg_geom_extra_json(geom);
     
     // write head byte
-    if ((geom->head.flags&IS_FEATURE_COL) == IS_FEATURE_COL) {
+    if ((getflags(geom)&IS_FEATURE_COL) == IS_FEATURE_COL) {
         write_byte(wr, 0x04);
-    } else if ((geom->head.flags&IS_FEATURE) == IS_FEATURE) {
+    } else if ((getflags(geom)&IS_FEATURE) == IS_FEATURE) {
         write_byte(wr, 0x03);
-    } else if (geom->head.type == TG_POINT && !xjson) {
+    } else if (gettype(geom) == TG_POINT && !xjson) {
         write_geom_point_wkb(geom, wr);
         return;
     } else {
@@ -15670,7 +15720,7 @@ static void write_base_geom_geobin(const struct tg_geom *geom,
     }
     write_byte(wr, 0);
     
-    if ((geom->head.flags&IS_FEATURE_COL) == IS_FEATURE_COL) {
+    if ((getflags(geom)&IS_FEATURE_COL) == IS_FEATURE_COL) {
         // write feature collection
         int ngeoms = tg_geom_num_geometries(geom);
         write_uint32le(wr, (uint32_t)ngeoms);
@@ -15718,10 +15768,10 @@ static void write_poly_geobin(struct tg_poly *poly, struct writer *wr) {
 }
 
 static void write_geom_geobin(const struct tg_geom *geom, struct writer *wr) {
-    if ((geom->head.flags&IS_FEATURE) == IS_FEATURE) {
+    if ((getflags(geom)&IS_FEATURE) == IS_FEATURE) {
         goto base_geom;
     }
-    switch (geom->head.base) {
+    switch (getbase(geom)) {
     case BASE_GEOM:
     base_geom:
         write_base_geom_geobin(geom, wr);
@@ -15793,20 +15843,20 @@ int tg_geom_fullrect(const struct tg_geom *geom, double min[4], double max[4]) {
     max[2] = 0;
     max[3] = 0;
     int dims = 2;
-    if (geom->head.base == BASE_GEOM) {
-        if (geom->head.type == TG_POINT) {
+    if (getbase(geom) == BASE_GEOM) {
+        if (gettype(geom) == TG_POINT) {
             // Point
-            if ((geom->head.flags&HAS_Z) == HAS_Z) {
+            if ((getflags(geom)&HAS_Z) == HAS_Z) {
                 min[dims] = geom->z;
                 max[dims] = geom->z;
                 dims++;
             }
-            if ((geom->head.flags&HAS_M) == HAS_M) {
+            if ((getflags(geom)&HAS_M) == HAS_M) {
                 min[dims] = geom->m;
                 max[dims] = geom->m;
                 dims++;
             }
-        } else if (geom->head.type == TG_GEOMETRYCOLLECTION && geom->multi) {
+        } else if (gettype(geom) == TG_GEOMETRYCOLLECTION && geom->multi) {
             // GeometryCollection. Expand all child geometries
             struct tg_geom **geoms = geom->multi->geoms;
             int ngeoms = geom->multi->ngeoms;
@@ -15836,8 +15886,8 @@ int tg_geom_fullrect(const struct tg_geom *geom, double min[4], double max[4]) {
             }
         } else {
             // Other geometries
-            if ((geom->head.flags&HAS_Z) == HAS_Z) dims++;
-            if ((geom->head.flags&HAS_M) == HAS_M) dims++;
+            if ((getflags(geom)&HAS_Z) == HAS_Z) dims++;
+            if ((getflags(geom)&HAS_M) == HAS_M) dims++;
             if (dims == 3 && geom->ncoords > 0) {
                 min[2] = geom->coords[0];
                 max[2] = geom->coords[0];
@@ -15959,4 +16009,18 @@ struct tg_point tg_geobin_point(const uint8_t *geobin, size_t len) {
         }
     }
     return point;
+}
+
+struct tg_type_offsets {
+    size_t base;        // all objects
+    size_t type;        // all objects
+    size_t ring_rect;   // for tg_ring and tg_line
+    size_t point_point; // for boxed_point
+};
+
+void tg_type_offsets(struct tg_type_offsets *offsets) {
+    offsets->base = offsetof(struct head, base);
+    offsets->type = offsetof(struct head, type);
+    offsets->ring_rect = offsetof(struct tg_ring, rect);
+    offsets->point_point = offsetof(struct boxed_point, point);
 }
