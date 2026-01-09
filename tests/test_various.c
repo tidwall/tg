@@ -241,8 +241,24 @@ void test_various_fixed_floating_points(void) {
     assert(strcmp(buf, a) == 0);
     tg_env_set_print_fixed_floats(false);
     tg_geom_free(g);
+}
 
-    
+struct tg_type_offsets {
+    size_t base;        // all objects
+    size_t type;        // all objects
+    size_t ring_rect;   // for tg_ring and tg_line
+    size_t point_point; // for boxed_point
+};
+
+void tg_type_offsets(struct tg_type_offsets *offsets);
+
+void test_various_type_offsets(void) {
+    struct tg_type_offsets offsets = { 0 };
+    tg_type_offsets(&offsets);
+    assert(offsets.base > 0);
+    assert(offsets.type > 0);
+    assert(offsets.ring_rect > 0);
+    assert(offsets.point_point > 0);
 }
 
 int main(int argc, char **argv) {
@@ -252,6 +268,7 @@ int main(int argc, char **argv) {
     do_test(test_various_unit_tests);
     do_test(test_various_noheap);
     do_test(test_various_fixed_floating_points);
+    do_test(test_various_type_offsets);
     return 0;
 }
 

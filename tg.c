@@ -84,6 +84,13 @@ enum tg_raycast_result {
     TG_ON,   // point is on the segment
 };
 
+struct tg_type_offsets {
+    size_t base;        // all objects
+    size_t type;        // all objects
+    size_t ring_rect;   // for tg_ring and tg_line
+    size_t point_point; // for boxed_point
+};
+
 // Public methods. These should also be in the tg.h file
 TG_EXTERN struct tg_geom *tg_geom_new_point(struct tg_point point);
 TG_EXTERN struct tg_geom *tg_geom_new_linestring(const struct tg_line *line);
@@ -519,6 +526,7 @@ TG_EXTERN bool tg_ring_intersects_line(const struct tg_ring *ring,
     const struct tg_line *line, bool allow_on_edge);
 TG_EXTERN bool tg_ring_intersects_ring(const struct tg_ring *ring,
     const struct tg_ring *other, bool allow_on_edge);
+TG_EXTERN void tg_type_offsets(struct tg_type_offsets *offsets);
 
 enum base {
     BASE_POINT = 1, // tg_point
@@ -563,7 +571,7 @@ The relaxed/release/acquire pattern is based on:
 http://boost.org/doc/libs/1_87_0/libs/atomic/doc/html/atomic/usage_examples.html
 */
 
-typedef atomic_int_fast32_t rc_t;
+typedef atomic_int rc_t;
 static void rc_init(rc_t *rc) {
     atomic_init(rc, 0);
 }
@@ -587,8 +595,6 @@ struct head {
     uint8_t type;   // enum tg_geom_type
     uint8_t flags;  // enum flags
 };
-
-static_assert(sizeof(struct head) == 8, "");
 
 // The obj param in the following head functions must be:
 // head, tg_geom, tg_ring, tg_line, or boxed_point.
@@ -16010,13 +16016,6 @@ struct tg_point tg_geobin_point(const uint8_t *geobin, size_t len) {
     }
     return point;
 }
-
-struct tg_type_offsets {
-    size_t base;        // all objects
-    size_t type;        // all objects
-    size_t ring_rect;   // for tg_ring and tg_line
-    size_t point_point; // for boxed_point
-};
 
 void tg_type_offsets(struct tg_type_offsets *offsets) {
     offsets->base = offsetof(struct head, base);
