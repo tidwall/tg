@@ -84,13 +84,6 @@ enum tg_raycast_result {
     TG_ON,   // point is on the segment
 };
 
-struct tg_type_offsets {
-    size_t base;        // all objects
-    size_t type;        // all objects
-    size_t ring_rect;   // for tg_ring and tg_line
-    size_t point_point; // for boxed_point
-};
-
 // Public methods. These should also be in the tg.h file
 TG_EXTERN struct tg_geom *tg_geom_new_point(struct tg_point point);
 TG_EXTERN struct tg_geom *tg_geom_new_linestring(const struct tg_line *line);
@@ -526,7 +519,6 @@ TG_EXTERN bool tg_ring_intersects_line(const struct tg_ring *ring,
     const struct tg_line *line, bool allow_on_edge);
 TG_EXTERN bool tg_ring_intersects_ring(const struct tg_ring *ring,
     const struct tg_ring *other, bool allow_on_edge);
-TG_EXTERN void tg_type_offsets(struct tg_type_offsets *offsets);
 
 enum base {
     BASE_POINT = 1, // tg_point
@@ -16015,11 +16007,4 @@ struct tg_point tg_geobin_point(const uint8_t *geobin, size_t len) {
         }
     }
     return point;
-}
-
-void tg_type_offsets(struct tg_type_offsets *offsets) {
-    offsets->base = offsetof(struct head, base);
-    offsets->type = offsetof(struct head, type);
-    offsets->ring_rect = offsetof(struct tg_ring, rect);
-    offsets->point_point = offsetof(struct boxed_point, point);
 }
