@@ -24,7 +24,7 @@ It's designed for programs that need real-time geospatial, such as geofencing, m
 
 The main goal of TG is to provide the fastest, most memory efficient geometry library for the purpose of monitoring spatial relationships, specifically operations like point-in-polygon and geometry intersect.
 
-It's a non-goal for TG to be a full GIS library. Consider [GEOS](https://libgeos.org) if you need GIS algorithms like generating a convex hull or voronoi diagram.
+It's a non-goal for TG to be a full GIS library. Consider [GEOS](https://libgeos.org) if you need GIS algorithms like generating a convex hull or voronoi diagram. The [tgx](https://github.com/tidwall/tgx) library is available for bridging GEOS and TG geometries, which allows for performing GEOS operations on a TG geometry.
 
 ## Performance
 
