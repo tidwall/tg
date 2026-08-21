@@ -15,32 +15,9 @@ struct tg_point *rand_points(struct tg_rect rect, int npoints) {
 void test_index_pip_concave() {
     tg_env_set_index(TG_NATURAL);
     int N = 10000;
-    struct tg_ring *ring_none = RING_NONE(az);
-    struct tg_ring *ring_nat = RING_NATURAL(az);
-    struct tg_ring *ring_ystr = RING_YSTRIPES(az);
-    int hits_nat = 0;
-    int hits_ystr = 0;
-    int hits_none = 0;
-    struct tg_point *points = rand_points(tg_ring_rect(ring_nat), N);
-    for (int i = 0; i < N; i++) {
-        if (tg_ring_contains_point(ring_nat, points[i], true).hit) {
-            hits_nat++;
-        }
-    }
-    for (int i = 0; i < N; i++) {
-        if (tg_ring_contains_point(ring_ystr, points[i], true).hit) {
-            hits_ystr++;
-        }
-    }
-    for (int i = 0; i < N; i++) {
-        if (tg_ring_contains_point(ring_none, points[i], true).hit) {
-            hits_none++;
-        }
-    }
-    
-    assert(hits_nat == hits_ystr);
-    assert(hits_nat == hits_none);
-    free(points);
+    struct tg_ring *ring_none = RING_INDEX(TG_NONE, az);
+    struct tg_ring *ring_nat = RING_INDEX(TG_NATURAL, az);
+    struct tg_ring *ring_ystr = RING_INDEX(TG_YSTRIPES, az);
 
     // struct tg_ring *ring_none = RING_NONE(tx);
     
@@ -58,7 +35,76 @@ void test_index_pip_concave() {
     assert(!recteq(tg_ring_index_level_rect(ring_nat, 0, 0), R(0,0,0,0)));
     assert(recteq(tg_ring_index_level_rect(ring_nat, 0, -1), R(0,0,0,0)));
     assert(recteq(tg_ring_index_level_rect(ring_nat, -1, 0), R(0,0,0,0)));
+
+
+
+    struct tg_ring *ring_none2 = tg_ring_copy(ring_none);
+    struct tg_ring *ring_nat2 = tg_ring_copy(ring_nat);
+    struct tg_ring *ring_ystr2 = tg_ring_copy(ring_ystr);
+
+    {
+        int hits_nat = 0;
+        int hits_ystr = 0;
+        int hits_none = 0;
+        struct tg_point *points = rand_points(tg_ring_rect(ring_nat), N);
+        for (int i = 0; i < N; i++) {
+            if (tg_ring_contains_point(ring_nat, points[i], true).hit) {
+                hits_nat++;
+            }
+        }
+        for (int i = 0; i < N; i++) {
+            if (tg_ring_contains_point(ring_ystr, points[i], true).hit) {
+                hits_ystr++;
+            }
+        }
+        for (int i = 0; i < N; i++) {
+            if (tg_ring_contains_point(ring_none, points[i], true).hit) {
+                hits_none++;
+            }
+        }
+
+        assert(hits_nat == hits_ystr);
+        assert(hits_nat == hits_none);
+        free(points);
+    }
+
+
+    tg_ring_free(ring_none);
+    tg_ring_free(ring_nat);
+    tg_ring_free(ring_ystr);
+
+    {
+        int hits_nat = 0;
+        int hits_ystr = 0;
+        int hits_none = 0;
+        struct tg_point *points = rand_points(tg_ring_rect(ring_nat2), N);
+        for (int i = 0; i < N; i++) {
+            if (tg_ring_contains_point(ring_nat2, points[i], true).hit) {
+                hits_nat++;
+            }
+        }
+        for (int i = 0; i < N; i++) {
+            if (tg_ring_contains_point(ring_ystr2, points[i], true).hit) {
+                hits_ystr++;
+            }
+        }
+        for (int i = 0; i < N; i++) {
+            if (tg_ring_contains_point(ring_none2, points[i], true).hit) {
+                hits_none++;
+            }
+        }
+
+        assert(hits_nat == hits_ystr);
+        assert(hits_nat == hits_none);
+        free(points);
+    }
+
+    tg_ring_free(ring_none2);
+    tg_ring_free(ring_nat2);
+    tg_ring_free(ring_ystr2);
+
 }
+
 
 void test_index_pip_circle() {
     tg_env_set_index(TG_NATURAL);
@@ -376,13 +422,9 @@ void test_index_svg() {
     
 }
 
-void test_index_ystripes_circle(void) {
-    struct tg_ring *ring = tg_circle_new_ix((struct tg_point) { -112, 33 }, 5, 
-        10000, TG_YSTRIPES);
-    assert(ring);
+void check_ystripes_circle(struct tg_ring *ring) {
     int npoints = 10000;
     struct tg_point *points = rand_points(tg_ring_rect(ring), npoints);
-
     int hits = 0;
     for (int i = 0; i < npoints; i++) {
         if (tg_ring_contains_point(ring, points[i], true).hit) {
@@ -394,7 +436,17 @@ void test_index_ystripes_circle(void) {
         assert(0);
     }
     free(points);
+}
+
+void test_index_ystripes_circle(void) {
+    struct tg_ring *ring = tg_circle_new_ix((struct tg_point) { -112, 33 }, 5, 
+        10000, TG_YSTRIPES);
+    assert(ring);
+    check_ystripes_circle(ring);
+    struct tg_ring *ring2 = tg_ring_copy(ring);
     tg_ring_free(ring);
+    check_ystripes_circle(ring2);
+    tg_ring_free(ring2);
 }
 
 void test_index_various(void) {

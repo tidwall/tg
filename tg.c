@@ -15145,6 +15145,45 @@ int tg_geom_de9im_dims(const struct tg_geom *geom) {
     return dims;
 }
 
+static void fixup_ystripes_pointers(struct ystripes *dst,
+    const struct ystripes *src)
+{
+    for (int i = 0; i < dst->nstripes; i++) {
+        size_t off = (uintptr_t)(src->stripes[i].indexes)-(uintptr_t)(src);
+        dst->stripes[i].indexes = (void*)((uintptr_t)(dst)+off);
+    }
+}
+
+static void fixup_index_pointers(struct index *dst, const struct index *src) {
+    for (int i = 0; i < dst->nlevels; i++) {
+        size_t off = (uintptr_t)(src->levels[i].rects)-(uintptr_t)(src);
+        dst->levels[i].rects = (void*)((uintptr_t)(dst)+off);
+    }
+}
+
+static bool ring_copy(struct tg_ring *dst, const struct tg_ring *src, 
+    size_t size)
+{
+    memcpy(dst, src, size);
+    rc_init(&dst->head.rc);
+    rc_retain(&dst->head.rc);
+    setnoheap(dst, 0);
+    if (src->ystripes) {
+        dst->ystripes = tg_malloc(src->ystripes->memsz);
+        if (!dst->ystripes) {
+            return false;
+        }
+        memcpy(dst->ystripes, src->ystripes, src->ystripes->memsz);
+        fixup_ystripes_pointers(dst->ystripes, src->ystripes);
+    }
+    if (src->index) {
+        size_t off = (uintptr_t)(src->index)-(uintptr_t)(src);
+        dst->index = (void*)((uintptr_t)(dst)+off);
+        fixup_index_pointers(dst->index, src->index);
+    }
+    return true;
+}
+
 /// Copies a ring
 /// @param ring Input ring, caller retains ownership.
 /// @return A duplicate of the provided ring. 
@@ -15161,17 +15200,9 @@ struct tg_ring *tg_ring_copy(const struct tg_ring *ring) {
     if (!ring2) {
         return NULL;
     }
-    memcpy(ring2, ring, size);
-    rc_init(&ring2->head.rc);
-    rc_retain(&ring2->head.rc);
-    setnoheap(ring2, 0);
-    if (ring->ystripes) {
-        ring2->ystripes = tg_malloc(ring->ystripes->memsz);
-        if (!ring2->ystripes) {
-            tg_free(ring2);
-            return NULL;
-        }
-        memcpy(ring2->ystripes, ring->ystripes, ring->ystripes->memsz);
+    if (!ring_copy(ring2, ring, size)) {
+        tg_free(ring2);
+        return NULL;
     }
     return ring2;
 }
