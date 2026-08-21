@@ -715,6 +715,7 @@ struct multi {
     int *ixgeoms;        // indexed geometries, or NULL if not indexed
 };
 
+#ifndef TG_ISOLATED_POINTERS
 /// A geometry is the common generic type that can represent a Point,
 /// LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, or 
 /// GeometryCollection. 
@@ -774,6 +775,32 @@ struct tg_geom {
         char *error; // an error message, when flag IS_ERROR
     };
 };
+#else
+// Pointers are not contained within unions.
+struct tg_geom {
+    struct head head;
+    struct tg_point point;
+    union {
+        struct tg_line *line;
+        struct tg_poly *poly;
+        struct multi *multi;
+    };
+    union {
+        struct {  // TG_POINT
+            double z;
+            double m;
+        };
+        struct {  // !TG_POINT
+            int ncoords;
+        };
+    };
+    double *coords; // extra dimensional coordinates
+    union {
+        char *xjson; // extra json fields, such as "id", "properties", etc.
+        char *error; // an error message, when flag IS_ERROR
+    };
+};
+#endif
 
 struct boxed_point {
     struct head head;
