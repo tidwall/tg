@@ -1897,17 +1897,6 @@ static void rect_to_ring(struct tg_rect rect, struct tg_ring *ring) {
     }
 }
 
-static void segment_to_ring(struct tg_segment seg, struct tg_ring *ring) {
-    memset(ring, 0, sizeof(struct tg_ring));
-    ring->rect = tg_segment_rect(seg);
-    ring->closed = false;
-    ring->convex = true;
-    ring->npoints = 2;
-    ring->nsegs = 1;
-    ring->points[0] = seg.a;
-    ring->points[1] = seg.b;
-}
-
 void tg_rect_search(const struct tg_rect rect, struct tg_rect target, 
     bool(*iter)(struct tg_segment seg, int index, void *udata),
     void *udata)
@@ -3675,9 +3664,7 @@ bool tg_line_covers_poly(const struct tg_line *line,
     if (rect.min.x != rect.max.x && rect.min.y != rect.max.y) return false;
     
     // polygon can fit in a straight (vertical or horizontal) line
-    struct tg_segment seg = { rect.min, rect.max };
     struct tg_ring *other = stack_ring();
-    segment_to_ring(seg, other);
     rect_to_ring(rect, other);
     return tg_line_covers_line(line, (struct tg_line*)(other));
 }
