@@ -646,10 +646,11 @@ static enum flags getflags(const void *obj) {
 /// @see PolyFuncs
 struct tg_ring {
     struct head head;
+    size_t allocsize;
+    double area;
     bool closed;
     bool clockwise;
     bool convex;
-    double area;
     int npoints;
     int nsegs;
     struct tg_rect rect;
@@ -2259,6 +2260,7 @@ static struct tg_ring *series_new(const struct tg_point *points, int npoints,
     memset(ring, 0, sizeof(struct tg_ring));
     rc_init(&ring->head.rc);
     rc_retain(&ring->head.rc);
+    ring->allocsize = size+ixsize;
     ring->closed = closed;
     ring->npoints = npoints;
     ring->nsegs = nsegs;
@@ -2389,7 +2391,7 @@ struct tg_ring *tg_ring_clone(const struct tg_ring *ring) {
 /// @see RingFuncs
 size_t tg_ring_memsize(const struct tg_ring *ring) {
     if (!ring) return 0;
-    size_t size = ring_alloc_size(ring);
+    size_t size = ring->allocsize ? ring->allocsize : ring_alloc_size(ring);
     if (ring->ystripes) {
         size += ring->ystripes->memsz;
     }
