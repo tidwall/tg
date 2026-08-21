@@ -15161,27 +15161,29 @@ static void fixup_index_pointers(struct index *dst, const struct index *src) {
     }
 }
 
-static bool ring_copy(struct tg_ring *dst, const struct tg_ring *src, 
+// Copy a ring from src to dst. It's expected that dst is an allocation that
+// is exactly the same size as src. Also if dst has ystripes then that must
+// be a defined pointer that is set to dst->ystripes before calling this 
+// function, and that pointer is to an allocation that is exactly the same
+// size as src->ystripes.
+static void ring_copy(struct tg_ring *dst, const struct tg_ring *src,
     size_t size)
 {
+    struct ystripes *dst_ystripes = dst->ystripes;
     memcpy(dst, src, size);
     rc_init(&dst->head.rc);
     rc_retain(&dst->head.rc);
     setnoheap(dst, 0);
-    if (src->ystripes) {
-        dst->ystripes = tg_malloc(src->ystripes->memsz);
-        if (!dst->ystripes) {
-            return false;
-        }
-        memcpy(dst->ystripes, src->ystripes, src->ystripes->memsz);
-        fixup_ystripes_pointers(dst->ystripes, src->ystripes);
+    if (src->ystripes && dst_ystripes) {
+        memcpy(dst_ystripes, src->ystripes, src->ystripes->memsz);
+        fixup_ystripes_pointers(dst_ystripes, src->ystripes);
+        dst->ystripes = dst_ystripes;
     }
     if (src->index) {
         size_t off = (uintptr_t)(src->index)-(uintptr_t)(src);
         dst->index = (void*)((uintptr_t)(dst)+off);
         fixup_index_pointers(dst->index, src->index);
     }
-    return true;
 }
 
 /// Copies a ring
@@ -15200,10 +15202,14 @@ struct tg_ring *tg_ring_copy(const struct tg_ring *ring) {
     if (!ring2) {
         return NULL;
     }
-    if (!ring_copy(ring2, ring, size)) {
-        tg_free(ring2);
-        return NULL;
+    if (ring->ystripes) {
+        ring2->ystripes = tg_malloc(ring->ystripes->memsz);
+        if (!ring2->ystripes) {
+            tg_free(ring2);
+            return NULL;
+        }
     }
+    ring_copy(ring2, ring, size);
     return ring2;
 }
 
