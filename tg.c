@@ -4334,7 +4334,7 @@ size_t tg_poly_memsize(const struct tg_poly *poly) {
     if (poly->exterior) {
         size += tg_ring_memsize(poly->exterior);
     }
-    size += poly->nholes*sizeof(struct tg_ring);
+    size += poly->nholes*sizeof(struct tg_ring*);
     for (int i = 0; i < poly->nholes; i++) {
         size += tg_ring_memsize(poly->holes[i]);
     }
