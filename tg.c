@@ -673,7 +673,6 @@ struct multi {
     int *ixgeoms;        // indexed geometries, or NULL if not indexed
 };
 
-#ifndef TG_ISOLATED_POINTERS
 /// A geometry is the common generic type that can represent a Point,
 /// LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, or 
 /// GeometryCollection. 
@@ -733,32 +732,48 @@ struct tg_geom {
         char *error; // an error message, when flag IS_ERROR
     };
 };
-#else
-// Pointers are not contained within unions.
-struct tg_geom {
+
+// Static assert sizes and offsets for the three different tg_geom field combos.
+struct geom_error {
+    struct head head;
+    double unused[4];
+    char *error;
+};
+
+struct geom_point {
     struct head head;
     struct tg_point point;
-    union {
-        struct tg_line *line;
-        struct tg_poly *poly;
-        struct multi *multi;
-    };
-    union {
-        struct {  // TG_POINT
-            double z;
-            double m;
-        };
-        struct {  // !TG_POINT
-            int ncoords;
-        };
-    };
-    double *coords; // extra dimensional coordinates
-    union {
-        char *xjson; // extra json fields, such as "id", "properties", etc.
-        char *error; // an error message, when flag IS_ERROR
-    };
+    double z;
+    double m;
+    char *xjson;
 };
-#endif
+
+struct geom_nonpoint {
+    struct head head;
+    void *data; // struct tg_line*, struct tg_poly*, or struct multi*
+    double unused[1];
+    double *coords;
+    int ncoords;
+    char *xjson;
+};
+
+#define ASSERTSIZE(a, b) \
+    static_assert(sizeof(a) == sizeof(b), "bad size")
+#define ASSERTOFFSET(a, af, b, bf) \
+    static_assert(offsetof(a, af) == offsetof(b, bf), "bad offset")
+
+ASSERTSIZE(struct geom_error, struct tg_geom);
+ASSERTSIZE(struct geom_point, struct tg_geom);
+ASSERTSIZE(struct geom_nonpoint, struct tg_geom);
+ASSERTOFFSET(struct geom_error, error, struct tg_geom, error);
+ASSERTOFFSET(struct geom_point, point, struct tg_geom, point);
+ASSERTOFFSET(struct geom_point, z, struct tg_geom, z);
+ASSERTOFFSET(struct geom_point, m, struct tg_geom, m);
+ASSERTOFFSET(struct geom_point, xjson, struct tg_geom, xjson);
+ASSERTOFFSET(struct geom_nonpoint, data, struct tg_geom, poly);
+ASSERTOFFSET(struct geom_nonpoint, coords, struct tg_geom, coords);
+ASSERTOFFSET(struct geom_nonpoint, ncoords, struct tg_geom, ncoords);
+ASSERTOFFSET(struct geom_nonpoint, xjson, struct tg_geom, xjson);
 
 struct boxed_point {
     struct head head;
