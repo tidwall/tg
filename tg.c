@@ -757,28 +757,33 @@ struct geom_nonpoint {
     char *xjson;
 };
 
-#define ASSERTSIZE(a, b) \
-    static_assert(sizeof(a) == sizeof(b), "bad size")
-#define ASSERTOFFSET(a, af, b, bf) \
-    static_assert(offsetof(a, af) == offsetof(b, bf), "bad offset")
-
-ASSERTSIZE(struct geom_error, struct tg_geom);
-ASSERTSIZE(struct geom_point, struct tg_geom);
-ASSERTSIZE(struct geom_nonpoint, struct tg_geom);
-ASSERTOFFSET(struct geom_error, error, struct tg_geom, error);
-ASSERTOFFSET(struct geom_point, point, struct tg_geom, point);
-ASSERTOFFSET(struct geom_point, z, struct tg_geom, z);
-ASSERTOFFSET(struct geom_point, m, struct tg_geom, m);
-ASSERTOFFSET(struct geom_point, xjson, struct tg_geom, xjson);
-ASSERTOFFSET(struct geom_nonpoint, data, struct tg_geom, poly);
-ASSERTOFFSET(struct geom_nonpoint, coords, struct tg_geom, coords);
-ASSERTOFFSET(struct geom_nonpoint, ncoords, struct tg_geom, ncoords);
-ASSERTOFFSET(struct geom_nonpoint, xjson, struct tg_geom, xjson);
-
 struct boxed_point {
     struct head head;
     struct tg_point point;
 };
+
+#define ASSERTSIZEOF(a, z) static_assert(sizeof(a)==z,"wrong size")
+#define ASSERTSIZEOFEQ(a, b) ASSERTSIZEOF(a,sizeof(b))
+#define ASSERTOFFSETOF(a, af, z) static_assert(offsetof(a,af)==z,"wrong offset")
+#define ASSERTOFFSETOFEQ(a, af, b, bf) ASSERTOFFSETOF(a,af,offsetof(b,bf))
+
+ASSERTSIZEOF(bool, 1);
+ASSERTSIZEOF(int, 4);
+ASSERTSIZEOF(rc_t, 4);
+ASSERTSIZEOF(struct head, 8);
+
+ASSERTSIZEOFEQ(struct geom_error, struct tg_geom);
+ASSERTSIZEOFEQ(struct geom_point, struct tg_geom);
+ASSERTSIZEOFEQ(struct geom_nonpoint, struct tg_geom);
+ASSERTOFFSETOFEQ(struct geom_error, error, struct tg_geom, error);
+ASSERTOFFSETOFEQ(struct geom_point, point, struct tg_geom, point);
+ASSERTOFFSETOFEQ(struct geom_point, z, struct tg_geom, z);
+ASSERTOFFSETOFEQ(struct geom_point, m, struct tg_geom, m);
+ASSERTOFFSETOFEQ(struct geom_point, xjson, struct tg_geom, xjson);
+ASSERTOFFSETOFEQ(struct geom_nonpoint, data, struct tg_geom, poly);
+ASSERTOFFSETOFEQ(struct geom_nonpoint, coords, struct tg_geom, coords);
+ASSERTOFFSETOFEQ(struct geom_nonpoint, ncoords, struct tg_geom, ncoords);
+ASSERTOFFSETOFEQ(struct geom_nonpoint, xjson, struct tg_geom, xjson);
 
 #define todo(msg) { \
     fprintf(stderr, "todo: %s, line: %d\n", (msg), __LINE__); \
@@ -1469,15 +1474,6 @@ bool tg_segment_covers_rect(struct tg_segment seg, struct tg_rect rect) {
            tg_segment_covers_point(seg, rect.max);
 }
 
-//////////////////
-// ystripes
-//////////////////
-
-struct ystripe {
-    int count;
-    int *indexes;
-};
-
 struct tg_buf {
     uint8_t *data;
     size_t len, cap;
@@ -1710,6 +1706,15 @@ static size_t calc_index_size(int ixspread, int nsegs, int *nlevelsout) {
     return size;
 }
 
+//////////////////
+// ystripes
+//////////////////
+
+struct ystripe {
+    int count;
+    int *indexes;
+};
+
 struct ystripes {
     size_t memsz;
     int nstripes;
@@ -1753,6 +1758,8 @@ static bool process_ystripes(struct tg_ring *ring) {
     tsize += nstripes*sizeof(struct ystripe);
     size_t mark = tsize;
     tsize += nmap*sizeof(int);
+    tsize = aligned_size(tsize);
+
     struct ystripes *ystripes = tg_malloc(tsize);
     if (!ystripes) {
         tg_free(ycounts);
