@@ -12,6 +12,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: test
       run: tests/run.sh
+
+  msvc:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Build and test with MSVC
+      shell: pwsh
+      run: |
+        cl /nologo /std:c11 /experimental:c11atomics /W4 `
+          tg.c tests/test_msvc.c /Fe:test_msvc.exe
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        .\test_msvc.exe
