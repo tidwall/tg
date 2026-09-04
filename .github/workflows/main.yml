@@ -1,6 +1,7 @@
 name: Vanilla C CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
