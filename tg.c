@@ -13940,7 +13940,13 @@ static size_t parse_wkb(const uint8_t *wkb, size_t len, size_t i, int depth,
     read_uint32(type);
 
     bool has_srid = !!(type & 0x20000000);
-    type &= 0xFFFF;
+    // PostGIS EWKB flag bits, in addition to the ISO type offsets below.
+    bool z = !!(type & 0x80000000);
+    bool m = !!(type & 0x40000000);
+    uint32_t t = type & 0xFFFF;
+    if (t >= 1000 && t <= 1999) { z = true; t -= 1000; }
+    else if (t >= 2000 && t <= 2999) { m = true; t -= 2000; }
+    else if (t >= 3000 && t <= 3999) { z = true; m = true; t -= 3000; }
     int srid = 0;
     if (has_srid) {
         // Read the SRID from the extended wkb format.
@@ -13951,34 +13957,15 @@ static size_t parse_wkb(const uint8_t *wkb, size_t len, size_t i, int depth,
     (void)srid; // Now throw it away.
 
     bool s = swap;
-    switch (type) {
-    case    1: return parse_wkb_point(wkb, len, i, s, 0, 0, d, ix, g);
-    case 1001: return parse_wkb_point(wkb, len, i, s, 1, 0, d, ix, g);
-    case 2001: return parse_wkb_point(wkb, len, i, s, 0, 1, d, ix, g);
-    case 3001: return parse_wkb_point(wkb, len, i, s, 1, 1, d, ix, g);
-    case    2: return parse_wkb_linestring(wkb, len, i, s, 0, 0, d, ix, g);
-    case 1002: return parse_wkb_linestring(wkb, len, i, s, 1, 0, d, ix, g);
-    case 2002: return parse_wkb_linestring(wkb, len, i, s, 0, 1, d, ix, g);
-    case 3002: return parse_wkb_linestring(wkb, len, i, s, 1, 1, d, ix, g);
-    case    3: return parse_wkb_polygon(wkb, len, i, s, 0, 0, d, ix, g); 
-    case 1003: return parse_wkb_polygon(wkb, len, i, s, 1, 0, d, ix, g); 
-    case 2003: return parse_wkb_polygon(wkb, len, i, s, 0, 1, d, ix, g); 
-    case 3003: return parse_wkb_polygon(wkb, len, i, s, 1, 1, d, ix, g); 
-    case    4: return parse_wkb_multipoint(wkb, len, i, s, 0, 0, d, ix, g);
-    case 1004: return parse_wkb_multipoint(wkb, len, i, s, 1, 0, d, ix, g);
-    case 2004: return parse_wkb_multipoint(wkb, len, i, s, 0, 1, d, ix, g);
-    case 3004: return parse_wkb_multipoint(wkb, len, i, s, 1, 1, d, ix, g);
-    case    5: return parse_wkb_multilinestring(wkb, len, i, s, 0, 0, d, ix, g);
-    case 1005: return parse_wkb_multilinestring(wkb, len, i, s, 1, 0, d, ix, g);
-    case 2005: return parse_wkb_multilinestring(wkb, len, i, s, 0, 1, d, ix, g);
-    case 3005: return parse_wkb_multilinestring(wkb, len, i, s, 1, 1, d, ix, g);
-    case    6: return parse_wkb_multipolygon(wkb, len, i, s, 0, 0, d, ix, g);
-    case 1006: return parse_wkb_multipolygon(wkb, len, i, s, 1, 0, d, ix, g);
-    case 2006: return parse_wkb_multipolygon(wkb, len, i, s, 0, 1, d, ix, g);
-    case 3006: return parse_wkb_multipolygon(wkb, len, i, s, 1, 1, d, ix, g);
-    case    7: case 1007: case 2007: case 3007: 
-        return parse_wkb_geometrycollection(wkb, len, i, s, 0, 0, d, ix, g);
-    default: 
+    switch (t) {
+    case 1: return parse_wkb_point(wkb, len, i, s, z, m, d, ix, g);
+    case 2: return parse_wkb_linestring(wkb, len, i, s, z, m, d, ix, g);
+    case 3: return parse_wkb_polygon(wkb, len, i, s, z, m, d, ix, g);
+    case 4: return parse_wkb_multipoint(wkb, len, i, s, z, m, d, ix, g);
+    case 5: return parse_wkb_multilinestring(wkb, len, i, s, z, m, d, ix, g);
+    case 6: return parse_wkb_multipolygon(wkb, len, i, s, z, m, d, ix, g);
+    case 7: return parse_wkb_geometrycollection(wkb, len, i, s, z, m, d, ix, g);
+    default:
         *g = make_parse_error("invalid type");
         return PARSE_FAIL;
     }
@@ -13988,10 +13975,15 @@ invalid:
 }
 
 /// Parse Well-known binary (WKB).
+///
+/// Both the ISO dimension offsets (type +1000/+2000/+3000) and the PostGIS
+/// EWKB type-word flags (0x80000000 = Z, 0x40000000 = M, 0x20000000 = SRID)
+/// are accepted for 3D/4D input.
+///
 /// @param wkb WKB data
 /// @param len Length of data
 /// @returns A geometry or an error. Use tg_geom_error() after parsing to check
-/// for errors. 
+/// for errors.
 /// @see tg_parse_wkb_ix()
 /// @see tg_geom_error()
 /// @see tg_geom_wkb()

@@ -821,7 +821,167 @@ void test_wkb_geometrycollection() {
 }
 
 
+// PostGIS EWKB extends the WKB type word with flag bits:
+// 0x80000000 = Z, 0x40000000 = M, 0x20000000 = SRID.
+// The parser must accept these in addition to the ISO type offsets
+// (1000/2000/3000). Otherwise 3D EWKB is silently misread as 2D: the
+// extra coordinates are consumed as x/y pairs of the following points.
+static struct tg_geom *ewkb_expect(const char *hex, int dims, bool z, bool m) {
+    struct tg_geom *geom = tg_parse_hex(hex);
+    assert(geom);
+    const char *err = tg_geom_error(geom);
+    if (err) {
+        printf("ewkb %s: expected '(null)', got '%s'\n", hex, err);
+        exit(1);
+    }
+    if (tg_geom_dims(geom) != dims) {
+        printf("ewkb %s: expected dims %d, got %d\n",
+            hex, dims, tg_geom_dims(geom));
+        exit(1);
+    }
+    if (tg_geom_has_z(geom) != z) {
+        printf("ewkb %s: expected has_z %d, got %d\n",
+            hex, (int)z, (int)tg_geom_has_z(geom));
+        exit(1);
+    }
+    if (tg_geom_has_m(geom) != m) {
+        printf("ewkb %s: expected has_m %d, got %d\n",
+            hex, (int)m, (int)tg_geom_has_m(geom));
+        exit(1);
+    }
+    return geom;
+}
+
+void test_wkb_ewkb_zm() {
+    struct tg_geom *geom;
+    struct tg_geom *iso;
+
+    // POINT Z (1 2 3), type word 0x80000001
+    geom = ewkb_expect("0101000080000000000000f03f00000000000000400000000000000840",
+        3, true, false);
+    iso = tg_parse_wkt("POINT(1 2 3)");
+    assert(!tg_geom_error(iso));
+    assert(tg_geom_equals(geom, iso));
+    assert(tg_geom_z(geom) == 3);
+    tg_geom_free(geom);
+    tg_geom_free(iso);
+
+    // POINT M (1 2 3), type word 0x40000001
+    geom = ewkb_expect("0101000040000000000000f03f00000000000000400000000000000840",
+        3, false, true);
+    iso = tg_parse_wkt("POINT M(1 2 3)");
+    assert(!tg_geom_error(iso));
+    assert(tg_geom_equals(geom, iso));
+    assert(tg_geom_m(geom) == 3);
+    tg_geom_free(geom);
+    tg_geom_free(iso);
+
+    // POINT ZM (1 2 3 4), type word 0xC0000001
+    geom = ewkb_expect("01010000c0000000000000f03f000000000000004000000000000008400000000000001040",
+        4, true, true);
+    iso = tg_parse_wkt("POINT(1 2 3 4)");
+    assert(!tg_geom_error(iso));
+    assert(tg_geom_equals(geom, iso));
+    assert(tg_geom_z(geom) == 3 && tg_geom_m(geom) == 4);
+    tg_geom_free(geom);
+    tg_geom_free(iso);
+
+    // LINESTRING Z (1 2 3, 3 4 5), type word 0x80000002
+    geom = ewkb_expect("010200008002000000000000000000f03f00000000000000400000000000000840000000000000084000000000000010400000000000001440",
+        3, true, false);
+    iso = tg_parse_wkt("LINESTRING(1 2 3,3 4 5)");
+    assert(!tg_geom_error(iso));
+    assert(tg_geom_equals(geom, iso));
+    {
+        const struct tg_line *line = tg_geom_line(geom);
+        assert(tg_line_num_points(line) == 2);
+        const struct tg_point *pts = tg_line_points(line);
+        assert(pts[0].x == 1 && pts[0].y == 2 && pts[1].x == 3 && pts[1].y == 4);
+    }
+    assert(tg_geom_num_extra_coords(geom) == 2);
+    {
+        const double *xc = tg_geom_extra_coords(geom);
+        assert(xc[0] == 3 && xc[1] == 5);
+    }
+    tg_geom_free(geom);
+    tg_geom_free(iso);
+
+    // LINESTRING M (1 2 3, 3 4 5), type word 0x40000002
+    geom = ewkb_expect("010200004002000000000000000000f03f00000000000000400000000000000840000000000000084000000000000010400000000000001440",
+        3, false, true);
+    iso = tg_parse_wkt("LINESTRING M(1 2 3,3 4 5)");
+    assert(!tg_geom_error(iso));
+    assert(tg_geom_equals(geom, iso));
+    tg_geom_free(geom);
+    tg_geom_free(iso);
+
+    // POLYGON Z ((0 0 5, 10 0 5, 10 10 5, 0 10 5, 0 0 5)), a 10x10 square,
+    // type word 0x80000003
+    geom = ewkb_expect("01030000800100000005000000"
+        "000000000000000000000000000000000000000000001440"
+        "000000000000244000000000000000000000000000001440"
+        "000000000000244000000000000024400000000000001440"
+        "000000000000000000000000000024400000000000001440"
+        "000000000000000000000000000000000000000000001440",
+        3, true, false);
+    iso = tg_parse_wkt("POLYGON Z((0 0 5,10 0 5,10 10 5,0 10 5,0 0 5))");
+    assert(!tg_geom_error(iso));
+    assert(tg_geom_equals(geom, iso));
+    {
+        const struct tg_ring *ext = tg_poly_exterior(tg_geom_poly(geom));
+        assert(tg_ring_num_points(ext) == 5);
+        assert(tg_ring_area(ext) == 100);
+    }
+    assert(tg_geom_num_extra_coords(geom) == 5);
+    {
+        const double *pc = tg_geom_extra_coords(geom);
+        for (int i = 0; i < 5; i++) {
+            assert(pc[i] == 5);
+        }
+    }
+    tg_geom_free(geom);
+    tg_geom_free(iso);
+
+    // MULTIPOINT Z ((1 2 3), (4 5 6)), type word 0x80000004, Z point children
+    geom = ewkb_expect("010400008002000000"
+        "0101000080000000000000f03f00000000000000400000000000000840"
+        "0101000080000000000000104000000000000014400000000000001840",
+        3, true, false);
+    iso = tg_parse_wkt("MULTIPOINT Z((1 2 3),(4 5 6))");
+    assert(!tg_geom_error(iso));
+    assert(tg_geom_equals(geom, iso));
+    tg_geom_free(geom);
+    tg_geom_free(iso);
+
+    // SRID and Z flags combined: type word 0xA0000001, SRID 4326 (0x10E6)
+    geom = ewkb_expect("01010000a0e6100000"
+        "000000000000f03f00000000000000400000000000000840",
+        3, true, false);
+    iso = tg_parse_wkt("POINT(1 2 3)");
+    assert(!tg_geom_error(iso));
+    assert(tg_geom_equals(geom, iso));
+    assert(tg_geom_z(geom) == 3);
+    tg_geom_free(geom);
+    tg_geom_free(iso);
+
+    // GEOMETRYCOLLECTION whose child carries the EWKB Z flag. The child must
+    // parse with its own flags; the collection itself stays 2D.
+    geom = tg_parse_hex("010700000001000000"
+        "0101000080000000000000f03f00000000000000400000000000000840");
+    assert(geom);
+    assert(!tg_geom_error(geom));
+    assert(tg_geom_num_geometries(geom) == 1);
+    {
+        const struct tg_geom *child = tg_geom_geometry_at(geom, 0);
+        assert(tg_geom_dims(child) == 3);
+        assert(tg_geom_has_z(child));
+        assert(tg_geom_z(child) == 3);
+    }
+    tg_geom_free(geom);
+}
+
 int main(int argc, char **argv) {
+    do_test(test_wkb_ewkb_zm);
     do_test(test_wkb_basic_syntax);
     do_test(test_wkb_max_depth);
     do_test(test_wkb_contrived);
