@@ -25,4 +25,4 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
     - name: test
       shell: bash
-      run: CC=cl tests/run.sh test_msvc
+      run: CC=cl tests/run.sh

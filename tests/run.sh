@@ -50,7 +50,7 @@ if [[ "$CC" == "cl" ]]; then
 fi
 if [[ "$1" != "bench" ]]; then
     if [[ "$MSVC" == "1" ]]; then
-        CFLAGS="-nologo -std:c11 -experimental:c11atomics -W4 $CFLAGS"
+        CFLAGS="-nologo -std:c11 -experimental:c11atomics -bigobj -W4 $CFLAGS"
         CCVERSHEAD="$($CC 2>&1 | head -n 1)"
     else
         CFLAGS="-O0 -g2 -Wall -Wextra -fstrict-aliasing $CFLAGS"
@@ -132,9 +132,7 @@ if [[ "$NOSANS" == "1" ]]; then
 fi
 echo "TG Commit: `git rev-parse --short HEAD 2>&1 || true`"
 
-if [[ "$1" != "test_msvc" ]]; then
-    ./genrelations.sh
-fi
+./genrelations.sh
 
 # GEOS - used for benchmarking
 if [[ "$GEOS_BENCH" == "1" ]]; then
@@ -176,6 +174,9 @@ else
     DEPS_SRCS="../deps/json.c ../deps/fp.c"
     DEPS_OBJS="json.o fp.o"
     rm -f tg.o $DEPS_OBJS
+    if [[ "$MSVC" == "1" ]]; then
+        $CC $CFLAGS -c ../tg.c ../deps/json.c
+    fi
     for f in *; do 
         if [[ "$f" != test_*.c ]]; then continue; fi 
         if [[ "$1" == test_* ]]; then 
@@ -190,7 +191,7 @@ else
             if [[ "$f" != $p* ]]; then continue; fi
         fi
         if [[ "$MSVC" == "1" ]]; then
-            $CC $CFLAGS ../tg.c $f -Fe:$f.test.exe
+            $CC $CFLAGS tg.obj json.obj $f -Fe:$f.test.exe
             ./$f.test.exe $@
             continue
         fi

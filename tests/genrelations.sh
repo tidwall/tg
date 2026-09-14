@@ -4,7 +4,7 @@ set -e
 cd $(dirname "${BASH_SOURCE[0]}")
 
 compfile() {
-    hexdump -v -e '16/1 "_x%02X" "\n"' $1 | \
+    od -An -v -tx1 $1 | tr -d ' \n' | fold -w32 | sed 's/../_x&/g' | \
         sed 's/_/\\/g; s/\\x  //g; s/.*/    "&"/'
     echo ";"
 }
@@ -18,7 +18,7 @@ compheader() {
         echo "static const char $filename[] ="
         compfile $file
     done
-    echo "    
+    echo "
 struct relation {
     const char *name;
     const char *data;

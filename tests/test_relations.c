@@ -1,5 +1,4 @@
 #include "tests.h"
-#include <dirent.h>
 #include "../deps/json.h"
 
 /*
