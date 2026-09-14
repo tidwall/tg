@@ -3,6 +3,7 @@ name: Vanilla C CI
 on:
   workflow_dispatch:
   push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -22,10 +23,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: ilammy/msvc-dev-cmd@v1
-    - name: Build and test with MSVC
-      shell: pwsh
-      run: |
-        cl /nologo /std:c11 /experimental:c11atomics /W4 `
-          tg.c tests/test_msvc.c /Fe:test_msvc.exe
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        .\test_msvc.exe
+    - name: test
+      shell: bash
+      run: CC=cl tests/run.sh test_msvc

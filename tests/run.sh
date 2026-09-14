@@ -8,8 +8,10 @@ cd $(dirname "${BASH_SOURCE[0]}")
 OK=0
 finish() { 
     rm -fr *.o
+    rm -fr *.obj
     rm -fr *.out
     rm -fr *.test
+    rm -fr *.test.exe
     rm -fr *.profraw
     rm -fr *.dSYM
     rm -fr *.profdata
@@ -43,9 +45,17 @@ fi
 if [[ "$CC" == "" ]]; then
     CC=cc
 fi
+if [[ "$CC" == "cl" ]]; then
+    MSVC=1
+fi
 if [[ "$1" != "bench" ]]; then
-    CFLAGS="-O0 -g2 -Wall -Wextra -fstrict-aliasing $CFLAGS"
-    CCVERSHEAD="$($CC --version | head -n 1)"
+    if [[ "$MSVC" == "1" ]]; then
+        CFLAGS="-nologo -std:c11 -experimental:c11atomics -W4 $CFLAGS"
+        CCVERSHEAD="$($CC 2>&1 | head -n 1)"
+    else
+        CFLAGS="-O0 -g2 -Wall -Wextra -fstrict-aliasing $CFLAGS"
+        CCVERSHEAD="$($CC --version | head -n 1)"
+    fi
     if [[ "$CCVERSHEAD" == "" ]]; then
         exit 1
     fi
@@ -112,13 +122,19 @@ cc2="$(readlink -f "`which $CC | true`" | true)"
 if [[ "$cc2" == "" ]]; then
     cc2="$CC"
 fi
-echo Compiler: $($cc2 --version | head -n 1)
+if [[ "$MSVC" == "1" ]]; then
+    echo Compiler: $($cc2 2>&1 | head -n 1)
+else
+    echo Compiler: $($cc2 --version | head -n 1)
+fi
 if [[ "$NOSANS" == "1" ]]; then
     echo "Sanitizers disabled"
 fi
 echo "TG Commit: `git rev-parse --short HEAD 2>&1 || true`"
 
-./genrelations.sh
+if [[ "$1" != "test_msvc" ]]; then
+    ./genrelations.sh
+fi
 
 # GEOS - used for benchmarking
 if [[ "$GEOS_BENCH" == "1" ]]; then
@@ -173,6 +189,11 @@ else
             fi 
             if [[ "$f" != $p* ]]; then continue; fi
         fi
+        if [[ "$MSVC" == "1" ]]; then
+            $CC $CFLAGS ../tg.c $f -Fe:$f.test.exe
+            ./$f.test.exe $@
+            continue
+        fi
         if [[ ! -f "tg.o" ]]; then
             # Compile each dependency individually
             DEPS_SRCS_ARR=($DEPS_SRCS)
@@ -209,12 +230,14 @@ else
     done
 
     # test that TG_STATIC has no externs
-    externs="$(gcc -DTG_STATIC -c ../tg.c && \
-        nm -g tg.o | grep ' T ' | wc -l | xargs)"
-    if [[ "$externs" != "0" ]]; then
-        echo TG_STATIC returned externs
-        nm -g tg.o | grep ' T '
-        exit
+    if [[ "$MSVC" != "1" ]]; then
+        externs="$(gcc -DTG_STATIC -c ../tg.c && \
+            nm -g tg.o | grep ' T ' | wc -l | xargs)"
+        if [[ "$externs" != "0" ]]; then
+            echo TG_STATIC returned externs
+            nm -g tg.o | grep ' T '
+            exit
+        fi
     fi
 
     OK=1
