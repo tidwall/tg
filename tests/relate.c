@@ -17,6 +17,7 @@ $ ./relate <geom-a> <geom-b>
 GEOSContextHandle_t handle;
 
 static void geos_error(const char *message, void *userdata) {
+    (void)userdata;
     fprintf(stderr, "error: %s\n", message);
 }
 
@@ -107,8 +108,8 @@ int main(int argc, char **argv) {
     char *ba = GEOSRelate_r(handle, b, a);
     if (!ab || !ba) abort();
 
-    int da = GEOSGeom_getDimensions(a);
-    int db = GEOSGeom_getDimensions(b);
+    int da = GEOSGeom_getDimensions_r(handle, a);
+    int db = GEOSGeom_getDimensions_r(handle, b);
 
     printf("{\n");
     printf("  \"geoms\": [\n");
