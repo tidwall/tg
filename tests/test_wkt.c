@@ -360,7 +360,7 @@ void test_wkt_basic_syntax() {
     geom_wkt_match(
         gc_geom(tg_geom_new_multipoint_zm(
             (struct tg_point[]) { P(1,2),P(3,4) }, 0, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "MULTIPOINT EMPTY");
     geom_wkt_match(
@@ -378,27 +378,27 @@ void test_wkt_basic_syntax() {
     geom_wkt_match(
         gc_geom(tg_geom_new_multipoint_zm(
             (struct tg_point[]) { P(1,2),P(3,4) }, 2, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "MULTIPOINT(1 2 0 0,3 4 0 0)");
     geom_wkt_match(
         gc_geom(tg_geom_new_multipoint_zm(
             (struct tg_point[]) { P(1,2),P(3,4) }, 2, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "MULTIPOINT(1 2 0 0,3 4 0 0)");
     
     geom_wkt_match(
         gc_geom(tg_geom_new_multipoint_z(
             (struct tg_point[]) { P(1,2),P(3,4) }, 2, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "MULTIPOINT(1 2 0,3 4 0)");
 
     geom_wkt_match(
         gc_geom(tg_geom_new_multipoint_z(
             (struct tg_point[]) { P(1,2),P(3,4) }, 2, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "MULTIPOINT(1 2 0,3 4 0)");
 

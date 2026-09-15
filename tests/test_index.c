@@ -1,6 +1,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
+#if !defined(_WIN32) || defined(__MSYS__) || defined(__CYGWIN__)
 #include <unistd.h>
+#endif
 #include "tests.h"
 
 struct tg_point *rand_points(struct tg_rect rect, int npoints) {

@@ -544,7 +544,7 @@ void test_geojson_basic_syntax(void) {
     geom_geojson_match(
         gc_geom(tg_geom_new_multipoint_zm(
             (struct tg_point[]) { P(1,2),P(3,4) }, 0, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "{\"type\":\"MultiPoint\",\"coordinates\":[]}");
     geom_geojson_match(
@@ -562,34 +562,34 @@ void test_geojson_basic_syntax(void) {
     geom_geojson_match(
         gc_geom(tg_geom_new_multipoint_zm(
             (struct tg_point[]) { P(1,2),P(3,4) }, 2, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "{\"type\":\"MultiPoint\",\"coordinates\":[[1,2,0,0],[3,4,0,0]]}");
     geom_geojson_match(
         gc_geom(tg_geom_new_multipoint_zm(
             (struct tg_point[]) { P(1,2),P(3,4) }, 2, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "{\"type\":\"MultiPoint\",\"coordinates\":[[1,2,0,0],[3,4,0,0]]}");
     
     geom_geojson_match(
         gc_geom(tg_geom_new_multipoint_z(
             (struct tg_point[]) { P(1,2),P(3,4) }, 2, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "{\"type\":\"MultiPoint\",\"coordinates\":[[1,2,0],[3,4,0]]}");
 
     geom_geojson_match(
         gc_geom(tg_geom_new_multipoint_z(
             (struct tg_point[]) { P(1,2),P(3,4) }, 2, 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "{\"type\":\"MultiPoint\",\"coordinates\":[[1,2,0],[3,4,0]]}");
 
     geom_geojson_match(
         gc_geom(tg_geom_new_linestring_z(
             LINE(P(1,2),P(3,4),P(5,6)), 
-            (double[]) {}, 0
+            (double[]) {0}, 0
         )),
         "{\"type\":\"LineString\",\"coordinates\":[[1,2,0],[3,4,0],[5,6,0]]}");
 

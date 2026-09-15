@@ -11,14 +11,43 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if !defined(_WIN32) || defined(__MSYS__) || defined(__CYGWIN__)
 #include <unistd.h>
+#else
+#include <direct.h>
+#include <malloc.h>
+#define alloca _alloca
+#define CLOCK_REALTIME TIME_UTC
+#define clock_gettime(clock, ts) timespec_get((ts), TIME_UTC)
+#endif
 #include "../tg.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 #define P(x, y) ((struct tg_point){(x), (y)})
 #define S(a,b,c,d) ((struct tg_segment){P(a,b),P(c,d)})
 #define R(a,b,c,d) ((struct tg_rect){P(a,b),P(c,d)})
 #define SA(a,b,c,d) ((double[]){(a),(b),(c),(d)})
 
+#ifdef _MSC_VER
+struct tg_ring *tg_circle_new_ix(struct tg_point center, double radius,
+    int steps, enum tg_index ix);
+
+static struct tg_ring *ring_index_test(enum tg_index ix,
+    const struct tg_point *points, size_t npoints)
+{
+    struct tg_ring *ring = tg_ring_new_ix(points, npoints, ix);
+    assert(ring);
+    return ring;
+}
+
+#define RING_INDEX(ix, ...) ring_index_test((ix), \
+    ((struct tg_point[]){ {0, 0}, __VA_ARGS__ }) + 1, \
+    sizeof((struct tg_point[]){ {0, 0}, __VA_ARGS__ }) / \
+        sizeof(struct tg_point) - 1)
+#else
 #define RING_INDEX(ix, ...) ({ \
     struct tg_point points[] = { __VA_ARGS__ }; \
     struct tg_ring *ring = tg_ring_new_ix(points, \
@@ -26,6 +55,7 @@
     assert(ring); \
     ring; \
 })
+#endif
 
 #define RING(...)          gc_ring(RING_INDEX(TG_DEFAULT, __VA_ARGS__))
 #define RING_DEFAULT(...)  gc_ring(RING_INDEX(TG_DEFAULT, __VA_ARGS__))
@@ -33,22 +63,48 @@
 #define RING_NATURAL(...)  gc_ring(RING_INDEX(TG_NATURAL, __VA_ARGS__))
 #define RING_YSTRIPES(...) gc_ring(RING_INDEX(TG_YSTRIPES, __VA_ARGS__))
 
+#ifdef _MSC_VER
+static struct tg_ring *circle_index_test(enum tg_index ix,
+    struct tg_point center, double radius, int steps)
+{
+    struct tg_ring *ring = tg_circle_new_ix(center, radius, steps, ix);
+    assert(ring);
+    return ring;
+}
+
+#define CIRCLE_INDEX(ix, center, radius, steps) \
+    circle_index_test((ix), (center), (radius), (steps))
+#else
 #define CIRCLE_INDEX(ix, center, radius, steps) ({ \
     struct tg_ring *ring = tg_circle_new_ix((center), (radius), (steps), (ix)); \
     assert(ring); \
     ring; \
 })
+#endif
 #define CIRCLE(center, radius, steps)          gc_ring(CIRCLE_INDEX(TG_DEFAULT, (center), (radius), (steps)))
 #define CIRCLE_DEFAULT(center, radius, steps)  gc_ring(CIRCLE_INDEX(TG_DEFAULT, (center), (radius), (steps)))
 #define CIRCLE_NONE(center, radius, steps)     gc_ring(CIRCLE_INDEX(TG_NONE, (center), (radius), (steps)))
 #define CIRCLE_NATURAL(center, radius, steps)  gc_ring(CIRCLE_INDEX(TG_NATURAL, (center), (radius), (steps)))
 #define CIRCLE_YSTRIPES(center, radius, steps) gc_ring(CIRCLE_INDEX(TG_YSTRIPES, (center), (radius), (steps)))
 
+#ifdef _MSC_VER
+struct tg_ring *load_random_ring(int npoints, enum tg_index ix);
+
+static struct tg_ring *random_index_test(enum tg_index ix, int npoints)
+{
+    struct tg_ring *ring = load_random_ring(npoints, ix);
+    assert(ring);
+    return ring;
+}
+
+#define RANDOM_INDEX(ix, npoints) random_index_test((ix), (npoints))
+#else
 #define RANDOM_INDEX(ix, npoints) ({ \
     struct tg_ring *ring = load_random_ring((npoints), (ix)); \
     assert(ring); \
     ring; \
 })
+#endif
 #define RANDOM(npoints)          gc_ring(RANDOM_INDEX(TG_DEFAULT, (npoints)))
 #define RANDOM_DEFAULT(npoints)  gc_ring(RANDOM_INDEX(TG_DEFAULT, (npoints)))
 #define RANDOM_NONE(npoints)     gc_ring(RANDOM_INDEX(TG_NONE, (npoints)))
@@ -232,10 +288,10 @@ uint32_t tg_point_hilbert(struct tg_point point, struct tg_rect rect);
 // #define _WIN32_WINNT 0x0600
 #include <windows.h>
 #include <bcrypt.h>
-#include <unistd.h>
-// #pragma comment(lib, "bcrypt.lib")
+#undef small
+#pragma comment(lib, "bcrypt.lib")
 int mkdir0(const char *path) {
-    return mkdir(path);
+    return _mkdir(path);
 }
 #else
 int mkdir0(const char *path) {
@@ -382,6 +438,36 @@ struct tg_ring *rect_to_ring_test(struct tg_rect rect){
 
 #define RR(a,b,c,d) (rect_to_ring_test(R((a),(b),(c),(d)))) 
 
+#ifdef _MSC_VER
+static struct tg_line *line_test(const struct tg_point *points, size_t npoints)
+{
+    struct tg_line *line = tg_line_new(points, npoints);
+    assert(line);
+    return gc_line(line);
+}
+
+#define LINE(...) line_test(((struct tg_point[]){ {0, 0}, __VA_ARGS__ }) + 1, \
+    sizeof((struct tg_point[]){ {0, 0}, __VA_ARGS__ }) / \
+        sizeof(struct tg_point) - 1)
+
+struct tg_poly *tg_poly_new_gc(const struct tg_ring *exterior,
+    const struct tg_ring *const holes[], int nholes);
+
+static struct tg_poly *poly_test(const struct tg_ring *exterior,
+    const struct tg_ring *const holes[], size_t nholes)
+{
+    if (nholes > 100) {
+        fprintf(stderr, "cannot use POLY with over 100 holes\n");
+        assert(nholes <= 100);
+    }
+    return tg_poly_new_gc(exterior, holes, nholes);
+}
+
+#define PNUMARGS(...) (sizeof((const struct tg_ring*[]){NULL, __VA_ARGS__}) / \
+    sizeof(struct tg_ring*) - 1)
+#define POLY(exterior, ...) poly_test((exterior), \
+    ((const struct tg_ring*[]){NULL, __VA_ARGS__}) + 1, PNUMARGS(__VA_ARGS__))
+#else
 #define LINE(...) ({ \
     struct tg_point points[] = { __VA_ARGS__ }; \
     struct tg_line *line = tg_line_new(points, sizeof(points)/sizeof(struct tg_point)); \
@@ -400,6 +486,7 @@ struct tg_ring *rect_to_ring_test(struct tg_rect rect){
     struct tg_ring *holes[100] = { __VA_ARGS__ }; \
     tg_poly_new_gc((exterior), (const struct tg_ring*const*)holes, nholes); \
 })
+#endif
 
 // Runs a function on a polygon using every possible options.
 #define DUAL_POLY_TEST(poly_, func) { \

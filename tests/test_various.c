@@ -88,6 +88,14 @@ void test_various_unit_tests() {
 }
 
 
+#ifdef _MSC_VER
+static struct tg_geom *parse_wkt_check(const char *wkt) {
+    struct tg_geom *geom = tg_parse_wkt(wkt);
+    assert(!tg_geom_error(geom));
+    assert(geom);
+    return gc_geom(geom);
+}
+#else
 #define parse_wkt_check(wkt) ({ \
     struct tg_geom *geom = tg_parse_wkt((wkt)); \
     assert(!tg_geom_error(geom)); \
@@ -95,6 +103,7 @@ void test_various_unit_tests() {
     gc_geom(geom); \
     geom; \
 })
+#endif
 
 void test_various_imported_tests() {
     // struct tg_geom *geom = tg_parse_wkt("MULTIPOINT((5 5),EMPTY)");
@@ -252,5 +261,3 @@ int main(int argc, char **argv) {
     do_test(test_various_fixed_floating_points);
     return 0;
 }
-
-

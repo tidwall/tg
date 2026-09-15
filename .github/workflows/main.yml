@@ -12,6 +12,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: test
       run: tests/run.sh
+
+  msvc:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: test
+      shell: bash
+      run: CC=cl tests/run.sh
