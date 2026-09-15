@@ -3974,7 +3974,12 @@ bool tg_poly_contains_line(const struct tg_poly *a, const struct tg_line *b) {
     }
     int nholes = tg_poly_num_holes(a);
     for (int i = 0; i < nholes; i++) {
-        if (tg_ring_intersects_line(tg_poly_hole_at(a, i), b, false)) {
+        const struct tg_ring *hole = tg_poly_hole_at(a, i);
+        // A line wholly on a hole boundary is covered, but has no interior
+        // inside the polygon and therefore is not contained.
+        if (tg_ring_intersects_line(hole, b, false) ||
+            tg_ring_contains_line(hole, b, true, false))
+        {
             return false;
         }
     }
@@ -4037,11 +4042,12 @@ bool tg_poly_covers_poly(const struct tg_poly *a, const struct tg_poly *b) {
     if (!tg_ring_contains_ring(a_exterior, b_exterior, true)) {
         return false;
     }
-    // 2) ring cannot intersect or be contained by poly holes
+    // 2) The other exterior cannot enter a hole or lie entirely on its
+    // boundary. The latter does not count as an interior ring intersection.
     bool covers = true;
     for (int i = 0; i < a_nholes; i++) {
-        if (tg_ring_contains_ring(a_holes[i], b_exterior, true) ||
-            tg_ring_intersects_ring(a_holes[i], b_exterior, false))
+        if (tg_ring_intersects_ring(a_holes[i], b_exterior, false) ||
+            tg_ring_contains_ring(a_holes[i], b_exterior, true))
         {
             covers = false;
             // 3) unless the poly hole is contain inside of a other hole
