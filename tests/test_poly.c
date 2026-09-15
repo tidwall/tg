@@ -113,8 +113,8 @@ void test_poly_covers_poly() {
     DUAL_POLY_TEST(POLY(RING(octagon), hole1), {
         assert(tg_poly_covers_poly(poly, poly1));
         assert(!tg_poly_covers_poly(poly, tg_poly_move_gc(poly1, 1, 0)));
-        assert(tg_poly_covers_poly(poly, POLY(hole1)));
-        assert(!tg_poly_covers_poly(poly,POLY(hole2)));
+        assert(!tg_poly_covers_poly(poly, POLY(hole1)));
+        assert(!tg_poly_covers_poly(poly, POLY(hole2)));
     });
 }
 
@@ -182,10 +182,10 @@ void test_poly_casting() {
 
     assert(tg_poly_memsize(NULL) == 0);
     assert(tg_poly_memsize(poly1) == tg_ring_memsize(exterior));
-    assert(tg_poly_memsize(poly2) > tg_ring_memsize(exterior) + 
+    assert(tg_poly_memsize(poly2) > tg_ring_memsize(exterior) +
         tg_ring_memsize(hole));
 
-    struct tg_line *line = tg_line_new((struct tg_point[]) { 
+    struct tg_line *line = tg_line_new((struct tg_point[]) {
         P(-112+0.1, 33+0.1), P(-111-0.1, 34-0.1),
     }, 2);
     assert(line);
@@ -203,7 +203,7 @@ void test_poly_casting() {
     assert(!tg_poly_intersects_line(poly2, NULL));
 
     assert(tg_poly_covers_poly(poly1, poly2));
-    assert(tg_poly_covers_poly(poly2, poly3));
+    assert(!tg_poly_covers_poly(poly2, poly3));
     assert(tg_poly_covers_poly(poly1, poly3));
     assert(!tg_poly_covers_poly(poly2, poly1));
     assert(!tg_poly_covers_poly(poly3, poly1));
@@ -301,7 +301,7 @@ void test_poly_copy(void) {
 void test_poly_chaos(void) {
     struct tg_poly *poly = NULL;
     int must_fail = 0;
-    
+
     // copy chaos
     while (!poly) {
         struct tg_point points[] = { az };

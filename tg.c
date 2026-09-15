@@ -4037,10 +4037,12 @@ bool tg_poly_covers_poly(const struct tg_poly *a, const struct tg_poly *b) {
     if (!tg_ring_contains_ring(a_exterior, b_exterior, true)) {
         return false;
     }
-    // 2) ring cannot intersect poly holes
+    // 2) ring cannot intersect or be contained by poly holes
     bool covers = true;
     for (int i = 0; i < a_nholes; i++) {
-        if (tg_ring_intersects_ring(a_holes[i], b_exterior, false)) {
+        if (tg_ring_contains_ring(a_holes[i], b_exterior, true) ||
+            tg_ring_intersects_ring(a_holes[i], b_exterior, false))
+        {
             covers = false;
             // 3) unless the poly hole is contain inside of a other hole
             for (int j = 0; j < b_nholes; j++) {

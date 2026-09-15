@@ -719,5 +719,88 @@
       "touches":    ["T", "T"]
     }
   },
-
+  // The second geom fills the parent's hole despite sharing its outer shell.
+  {
+    "geoms": [
+      "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
+      "POLYGON((0 0,10 0,10 10,0 10,0 0))"
+    ],
+    "dims": [ 2, 2 ],
+    "relate": [ "2FF11F2F2", "212F1FFF2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "T"],
+      "within":     ["T", "F"],
+      "covers":     ["F", "T"],
+      "coveredby":  ["T", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  // The second geom is inside the outer shell but still covers the hole.
+  {
+    "geoms": [
+      "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
+      "POLYGON((1 1,9 1,9 9,1 9,1 1))"
+    ],
+    "dims": [ 2, 2 ],
+    "relate": [ "2121F12F2", "2121FF212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["T", "T"],
+      "touches":    ["F", "F"]
+    }
+  },
+  // A polygon identical to the hole touches the parent at its boundary.
+  {
+    "geoms": [
+      "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
+      "POLYGON((2 2,8 2,8 8,2 8,2 2))"
+    ],
+    "dims": [ 2, 2 ],
+    "relate": [ "FF2F112F2", "FF2F1F212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  // A polygon strictly inside the hole is disjoint from the parent.
+  {
+    "geoms": [
+      "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
+      "POLYGON((3 3,7 3,7 7,3 7,3 3))"
+    ],
+    "dims": [ 2, 2 ],
+    "relate": [ "FF2FF1212", "FF2FF1212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
 ]
