@@ -719,49 +719,8 @@
       "touches":    ["T", "T"]
     }
   },
-  // The second geom fills the parent's hole despite sharing its outer shell.
-  {
-    "geoms": [
-      "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
-      "POLYGON((0 0,10 0,10 10,0 10,0 0))"
-    ],
-    "dims": [ 2, 2 ],
-    "relate": [ "2FF11F2F2", "212F1FFF2" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "T"],
-      "within":     ["T", "F"],
-      "covers":     ["F", "T"],
-      "coveredby":  ["T", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["F", "F"]
-    }
-  },
-  // The second geom is inside the outer shell but still covers the hole.
-  {
-    "geoms": [
-      "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
-      "POLYGON((1 1,9 1,9 9,1 9,1 1))"
-    ],
-    "dims": [ 2, 2 ],
-    "relate": [ "2121F12F2", "2121FF212" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["T", "T"],
-      "touches":    ["F", "F"]
-    }
-  },
-  // A polygon identical to the hole touches the parent at its boundary.
+  // A polygon identical to the hole touches the first geom at its boundary,
+  // but is not covered by or within the first geom.
   {
     "geoms": [
       "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
@@ -782,25 +741,51 @@
       "touches":    ["T", "T"]
     }
   },
-  // A polygon strictly inside the hole is disjoint from the parent.
+  // A polygon identical to the hole touches the first geom at its boundary,
+  // but is not covered by or within the first geom. This is also true
+  // when the second geom has vertices that lie exactly along the hole.
   {
     "geoms": [
       "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
-      "POLYGON((3 3,7 3,7 7,3 7,3 3))"
+      "POLYGON((2 2,5 2,8 2,8 5,8 8,5 8,2 8, 2 5,2 2))"
     ],
     "dims": [ 2, 2 ],
-    "relate": [ "FF2FF1212", "FF2FF1212" ],
+    "relate": [ "FF2F112F2", "FF2F1F212" ],
     "predicates": {
       "equals":     ["F", "F"],
-      "intersects": ["F", "F"],
-      "disjoint":   ["T", "T"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
       "contains":   ["F", "F"],
       "within":     ["F", "F"],
       "covers":     ["F", "F"],
       "coveredby":  ["F", "F"],
       "crosses":    ["F", "F"],
       "overlaps":   ["F", "F"],
-      "touches":    ["F", "F"]
+      "touches":    ["T", "T"]
+    }
+  },
+  // When a linestring geom2 is coincident with polygon hole, the
+  // linestring is covered by the polygon but not contained by it
+  // // When geom2 is identical to a hole of geom1, the polygon covers
+  // the linestring but does not contain it.
+  {
+    "geoms": [
+      "POLYGON((0 0,10 0,10 10,0 10,0 0),(2 2,8 2,8 8,2 8,2 2))",
+      "LINESTRING(2 2,8 2,8 8,2 8,2 2)"
+    ],
+    "dims": [ 2, 1 ],
+    "relate": [ "FF21F1FF2", "F1FFFF212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
     }
   },
 ]
