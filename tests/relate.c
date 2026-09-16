@@ -92,12 +92,11 @@ GEOSGeometry *read_wkt(const char *wkt) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 3) {
+    if (argc < 3 || strlen(argv[1]) == 0 || strlen(argv[2]) == 0) {
         fprintf(stderr, "usage: relate <geom-a> <geom-b>\n");
         exit(1);
     }
     handle = GEOS_init_r();
-
     GEOSContext_setErrorMessageHandler_r(handle, geos_error, 0);
     bool ajson = isjson(argv[1]);
     bool bjson = isjson(argv[2]);
