@@ -16,9 +16,15 @@
 #else
 #include <direct.h>
 #include <malloc.h>
+#ifndef alloca
 #define alloca _alloca
+#endif
+#ifndef CLOCK_REALTIME
 #define CLOCK_REALTIME TIME_UTC
+#endif
+#ifndef clock_gettime
 #define clock_gettime(clock, ts) timespec_get((ts), TIME_UTC)
+#endif
 #endif
 #include "../tg.h"
 
@@ -289,7 +295,9 @@ uint32_t tg_point_hilbert(struct tg_point point, struct tg_rect rect);
 #include <windows.h>
 #include <bcrypt.h>
 #undef small
+#ifdef _MSC_VER
 #pragma comment(lib, "bcrypt.lib")
+#endif
 int mkdir0(const char *path) {
     return _mkdir(path);
 }
