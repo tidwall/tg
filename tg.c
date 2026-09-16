@@ -14543,13 +14543,14 @@ static size_t parse_geobin(const uint8_t *geobin, size_t len, size_t i,
 
 static struct tg_geom *parse_hex(const char *hex, size_t len, enum tg_index ix)
 {
-#define _ 0
+    #define _ 0
     static const uint8_t hextoks[256] = { 
         _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
         _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,01,2,3,4,5,6,7,8,9,10,_,_,_,_,_,
         _,_,11,12,13,14,15,16,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
         _,_,_,_,_,11,12,13,14,15,16,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
     };
+    #undef _
     uint8_t *dst = NULL;
     bool must_free = false;
     if (len == 0 || (len&1) == 1) goto invalid;
@@ -14565,7 +14566,7 @@ static struct tg_geom *parse_hex(const char *hex, size_t len, enum tg_index ix)
     for (size_t i = 0; i < len; i += 2) {
         uint8_t b0 = hextoks[(uint8_t)hex[i+0]];
         uint8_t b1 = hextoks[(uint8_t)hex[i+1]];
-        if (b0 == _ || b1 == _) goto invalid;
+        if (!b0 || !b1) goto invalid;
         dst[j] = ((b0-1)<<4)|(b1-1);
         j++;
     }
@@ -14582,7 +14583,6 @@ static struct tg_geom *parse_hex(const char *hex, size_t len, enum tg_index ix)
     return geom;
 invalid:
     if (must_free) tg_free(dst);
-#undef _
     return make_parse_error(wkb_invalid_err());
 }
 
