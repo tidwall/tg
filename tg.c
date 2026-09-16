@@ -550,8 +550,19 @@ enum flags {
     IS_UNLOCATED   = 1<<7,  // GeoJSON. 'Feature' with 'geometry'=null
 };
 
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#ifndef __STDC_NO_ATOMICS__
+#define HAS_ATOMICS
+#endif
+#endif
+
+#ifndef HAS_ATOMICS 
+#error <stdatomic.h> is not available. \
+Explicitly provide TG_NOATOMIC if you intend to use TG without atomics.
+#endif
+
 // Optionally use non-atomic reference counting when TG_NOATOMICS is defined.
-#ifdef TG_NOATOMICS
+#if defined(TG_NOATOMICS)
 
 typedef int rc_t;
 static void rc_init(rc_t *rc) {
@@ -568,27 +579,25 @@ static bool rc_release(rc_t *rc) {
 
 #include <stdatomic.h>
 
+#ifdef _MSC_VER
+/* MSVC atomics memory ordering may not be complete. Use default (seq_cst) */
+#ifndef atomic_fetch_add_explicit
+#define atomic_fetch_add_explicit(a,b,c) atomic_fetch_add(a,b)
+#endif
+#ifndef atomic_fetch_sub_explicit
+#define atomic_fetch_sub_explicit(a,b,c) atomic_fetch_sub(a,b)
+#endif
+#endif 
+
 typedef atomic_int rc_t;
 static void rc_init(rc_t *rc) {
     atomic_init(rc, 0);
 }
 static void rc_retain(rc_t *rc) {
-#if defined(_MSC_VER)
-    (void)atomic_fetch_add(rc, 1);
-#else
-    atomic_fetch_add_explicit(rc, 1, __ATOMIC_RELAXED);
-#endif
+    (void)atomic_fetch_add_explicit(rc, 1, __ATOMIC_RELAXED);
 }
 static bool rc_release(rc_t *rc) {
-#if defined(_MSC_VER)
-    if (atomic_fetch_sub(rc, 1) == 1) {
-        atomic_thread_fence(memory_order_acquire);
-        return true;
-    }
-    return false;
-#else
     return atomic_fetch_sub_explicit(rc, 1, __ATOMIC_ACQ_REL) == 1;
-#endif
 }
 
 #endif
