@@ -30,6 +30,7 @@ Developer notes:
 - Do not edit a dependency directly in this file. Instead edit the file in
 the deps directory and then run deps/embed.sh to replace out its code in
 this file.
+- Limit line lengths to 80 columns. Use `grep -n '.\{81\}' tg.c` to help.
 
 *******************************************************************************/
 
@@ -2113,7 +2114,7 @@ lconcave:
     return rect;
 }
 
-static int num_segments(const struct tg_point *points, int npoints, bool closed) 
+static int num_segments(const struct tg_point *points, int npoints, bool closed)
 {
     if (closed) {
         if (npoints < 3) return 0;
@@ -7874,9 +7875,11 @@ static bool buf_append_json_pair(struct tg_buf *buf, struct json key,
 {
     size_t len = buf->len;
     if (!tg_buf_append_byte(buf, buf->len == 0 ? '{' : ',') ||
-        !tg_buf_append_bytes(buf, (uint8_t*)json_raw(key), json_raw_length(key)) || 
+        !tg_buf_append_bytes(buf, (uint8_t*)json_raw(key), 
+            json_raw_length(key)) || 
         !tg_buf_append_byte(buf, ':') || 
-        !tg_buf_append_bytes(buf, (uint8_t*)json_raw(val), json_raw_length(val)))
+        !tg_buf_append_bytes(buf, (uint8_t*)json_raw(val), 
+            json_raw_length(val)))
     {
         buf->len = len;
         return false;
@@ -10953,7 +10956,7 @@ static enum RyuStatus s2f_n(const char * buffer, const int len, float * result){
         // turn requires that the largest power of 2 that divides m10 + e10 is
         // greater than e2. If e2 is less than e10, then the result must be 
         // exact. Otherwise we use the existing multipleOfPowerOf2 function.
-        trailingZeros = e2 < e10 || (e2 - e10 < 32 && multipleOfPowerOf2_32(m10, 
+        trailingZeros = e2 < e10 || (e2 - e10 < 32 && multipleOfPowerOf2_32(m10,
             e2 - e10));
     } else {
         e2 = floor_log2_32(m10) + e10 - ceil_log2pow5(-e10) - 
@@ -12168,7 +12171,7 @@ bad_dims:
     return make_parse_error("%s", err_for_wkt_posn(dims));
 }
 
-static int parse_wkt_posns(enum base base, int dims, int depth, const char *wkt, 
+static int parse_wkt_posns(enum base base, int dims, int depth, const char *wkt,
     long len, struct dvec *posns, struct dvec *xcoords, const char **err)
 {
     (void)depth; // TODO: return correct depth errors
