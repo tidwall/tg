@@ -2151,7 +2151,7 @@ static enum RyuStatus s2f_n(const char * buffer, const int len, float * result){
         // turn requires that the largest power of 2 that divides m10 + e10 is
         // greater than e2. If e2 is less than e10, then the result must be 
         // exact. Otherwise we use the existing multipleOfPowerOf2 function.
-        trailingZeros = e2 < e10 || (e2 - e10 < 32 && multipleOfPowerOf2_32(m10, 
+        trailingZeros = e2 < e10 || (e2 - e10 < 32 && multipleOfPowerOf2_32(m10,
             e2 - e10));
     } else {
         e2 = floor_log2_32(m10) + e10 - ceil_log2pow5(-e10) - 
