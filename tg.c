@@ -594,10 +594,10 @@ static void rc_init(rc_t *rc) {
     atomic_init(rc, 0);
 }
 static void rc_retain(rc_t *rc) {
-    (void)atomic_fetch_add_explicit(rc, 1, __ATOMIC_RELAXED);
+    (void)atomic_fetch_add_explicit(rc, 1, memory_order_relaxed);
 }
 static bool rc_release(rc_t *rc) {
-    return atomic_fetch_sub_explicit(rc, 1, __ATOMIC_ACQ_REL) == 1;
+    return atomic_fetch_sub_explicit(rc, 1, memory_order_acq_rel) == 1;
 }
 
 #endif
