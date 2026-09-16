@@ -4,8 +4,6 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-#define _USE_MATH_DEFINES
-
 #include <math.h>
 #include <float.h>
 #include <stdarg.h>
@@ -18,15 +16,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-
-#if defined(_MSC_VER)
-#undef __BYTE_ORDER__
-#undef __ORDER_LITTLE_ENDIAN__
-#undef __ORDER_BIG_ENDIAN__
-#define __BYTE_ORDER__ 1
-#define __ORDER_LITTLE_ENDIAN__ 1
-#define __ORDER_BIG_ENDIAN__ 0
-#endif
 
 /******************************************************************************
 
@@ -13913,6 +13902,10 @@ invalid:
     goto fail;
 }
 
+#if !defined(_MSC_VER) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define IS_BIG_ENDIAN
+#endif
+
 static size_t parse_wkb(const uint8_t *wkb, size_t len, size_t i, int depth,
     enum tg_index ix, struct tg_geom **g)
 {
@@ -13924,12 +13917,10 @@ static size_t parse_wkb(const uint8_t *wkb, size_t len, size_t i, int depth,
 
     // Set the 'swap' bool which indicates that the wkb numbers need swapping
     // to match the host endianness.
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#ifdef IS_BIG_ENDIAN
     bool swap = wkb[i] == 1;
-#elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    bool swap = wkb[i] == 0;
 #else
-    #error "cannot determine byte order"
+    bool swap = wkb[i] == 0;
 #endif
     i++;
 
@@ -14026,7 +14017,7 @@ static void write_wkb_type(struct writer *wr, const struct head *head) {
 }
 
 static void write_posn_wkb(struct writer *wr, struct tg_point posn) {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#ifndef IS_BIG_ENDIAN
     if (wr->count+16 < wr->n) {
         memcpy(wr->dst+wr->count, &posn, 16);
         wr->count += 16;
@@ -14039,7 +14030,7 @@ static void write_posn_wkb(struct writer *wr, struct tg_point posn) {
 
 static void write_posn_wkb_3(struct writer *wr, struct tg_point posn, double z)
 {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#ifndef IS_BIG_ENDIAN
     if (wr->count+24 < wr->n) {
         memcpy(wr->dst+wr->count, ((double[3]){posn.x, posn.y, z}), 24);
         wr->count += 24;
@@ -14054,7 +14045,7 @@ static void write_posn_wkb_3(struct writer *wr, struct tg_point posn, double z)
 static void write_posn_wkb_4(struct writer *wr, struct tg_point posn, 
     double z, double m)
 {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#ifndef IS_BIG_ENDIAN
     if (wr->count+32 < wr->n) {
         memcpy(wr->dst+wr->count, ((double[4]){posn.x, posn.y, z, m}), 32);
         wr->count += 32;
@@ -14071,7 +14062,7 @@ static int write_ring_points_wkb(struct writer *wr, const struct tg_ring *ring)
 {
     write_uint32le(wr, ring->npoints);
     size_t needed = ring->npoints*16;
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#ifndef IS_BIG_ENDIAN
     if (wr->count+needed <= wr->n) {
         memcpy(wr->dst+wr->count, ring->points, needed);
         wr->count += needed;
@@ -14654,6 +14645,10 @@ double tg_ring_area(const struct tg_ring *ring) {
     // The ring area has already been calculated by process_points.
     return ring->area;
 }
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846264338327950288
+#endif
 
 /// Calculate the perimeter length of a ring.
 double tg_ring_perimeter(const struct tg_ring *ring) {

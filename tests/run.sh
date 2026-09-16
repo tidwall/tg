@@ -88,7 +88,6 @@ if [[ "$1" != "bench" ]]; then
         fi
         if [[ "$(which $LLVM_PROFDATA)" != "" && "$(which $LLVM_COV)" != "" ]]; then
             COV_VERS="$($LLVM_COV --version | awk '{print $4}' | awk -F'[ .]+' '{print $1}')"
-            echo $COV_VERS
             if [[ "$COV_VERS" -gt "14" ]]; then
                 WITHCOV=1
             fi
