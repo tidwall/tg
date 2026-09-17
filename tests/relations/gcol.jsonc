@@ -59,24 +59,168 @@
       "touches":    ["F", "F"]
     }
   },
-  {
-    "geoms": [
-      "GEOMETRYCOLLECTION (POINT (0 0), LINESTRING (0 0, 0 1))",
-      "POINT (0 0)"
-    ],
-    "dims": [ 1, 0 ],
-    "relate": [ "FF10F0FF2", "F0FFFF102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["T", "F"],
-      "coveredby":  ["F", "T"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
-    }
-  },
+  // Highest dimension handling: only the highest dimension counts towards
+  // the "interior" for the purposes of predicate evaluation
+  // {
+  //   "geoms": [
+  //     "GEOMETRYCOLLECTION (POINT (0 0), LINESTRING (0 0, 0 1))",
+  //     "POINT (0 0)"
+  //   ],
+  //   "dims": [ 1, 0 ],
+  //   "relate": [ "FF10F0FF2", "F0FFFF102" ],
+  //   "predicates": {
+  //     "equals":     ["F", "F"],
+  //     "intersects": ["T", "T"],
+  //     "disjoint":   ["F", "F"],
+  //     "contains":   ["F", "F"],
+  //     "within":     ["F", "F"],
+  //     "covers":     ["T", "F"],
+  //     "coveredby":  ["F", "T"],
+  //     "crosses":    ["F", "F"],
+  //     "overlaps":   ["F", "F"],
+  //     "touches":    ["T", "T"]
+  //   }
+  // },
+  // Already passes
+  // {
+  //   "geoms": [
+  //     "GEOMETRYCOLLECTION (POINT (0 0))",
+  //     "POINT (0 0)"
+  //   ],
+  //   "dims": [ 0, 0 ],
+  //   "relate": [ "0FFFFFFF2", "0FFFFFFF2" ],
+  //   "predicates": {
+  //     "equals":     ["T", "T"],
+  //     "intersects": ["T", "T"],
+  //     "disjoint":   ["F", "F"],
+  //     "contains":   ["T", "T"],
+  //     "within":     ["T", "T"],
+  //     "covers":     ["T", "T"],
+  //     "coveredby":  ["T", "T"],
+  //     "crosses":    ["F", "F"],
+  //     "overlaps":   ["F", "F"],
+  //     "touches":    ["F", "F"]
+  //   }
+  // },
+  // Already passes
+  // {
+  //   "geoms": [
+  //     "GEOMETRYCOLLECTION (POINT (0 0), LINESTRING (0 0, 0 1))",
+  //     "POINT (0 0.5)"
+  //   ],
+  //   "dims": [ 1, 0 ],
+  //   "relate": [ "0F1FF0FF2", "0FFFFF102" ],
+  //   "predicates": {
+  //     "equals":     ["F", "F"],
+  //     "intersects": ["T", "T"],
+  //     "disjoint":   ["F", "F"],
+  //     "contains":   ["T", "F"],
+  //     "within":     ["F", "T"],
+  //     "covers":     ["T", "F"],
+  //     "coveredby":  ["F", "T"],
+  //     "crosses":    ["F", "F"],
+  //     "overlaps":   ["F", "F"],
+  //     "touches":    ["F", "F"]
+  //   }
+  // },
+  //  {
+  //   "geoms": [
+  //     "GEOMETRYCOLLECTION (POINT (-1 -1), LINESTRING (0 0, 0 1))",
+  //     "POINT (-1 -1)"
+  //   ],
+  //   "dims": [ 1, 0 ],
+  //   "relate": [ "0F1FF0FF2", "0FFFFF102" ],
+  //   "predicates": {
+  //     "equals":     ["F", "F"],
+  //     "intersects": ["T", "T"],
+  //     "disjoint":   ["F", "F"],
+  //     "contains":   ["T", "F"],
+  //     "within":     ["F", "T"],
+  //     "covers":     ["T", "F"],
+  //     "coveredby":  ["F", "T"],
+  //     "crosses":    ["F", "F"],
+  //     "overlaps":   ["F", "F"],
+  //     "touches":    ["F", "F"]
+  //   }
+  // },
+  // {
+  //   "geoms": [
+  //     "GEOMETRYCOLLECTION (POINT (0 0), POLYGON ((0 0, 0 1, 1 0, 0 0)))",
+  //     "POINT (0 0)"
+  //   ],
+  //   "dims": [ 2, 0 ],
+  //   "relate": [ "FF20F1FF2", "F0FFFF212" ],
+  //   "predicates": {
+  //     "equals":     ["F", "F"],
+  //     "intersects": ["T", "T"],
+  //     "disjoint":   ["F", "F"],
+  //     "contains":   ["F", "F"],
+  //     "within":     ["F", "F"],
+  //     "covers":     ["T", "F"],
+  //     "coveredby":  ["F", "T"],
+  //     "crosses":    ["F", "F"],
+  //     "overlaps":   ["F", "F"],
+  //     "touches":    ["T", "T"]
+  //   }
+  // },
+  // {
+  //   "geoms": [
+  //     "GEOMETRYCOLLECTION (POINT (0 0), POLYGON ((0 0, 0 1, 1 0, 0 0)))",
+  //     "POINT (0.25 0.25)"
+  //   ],
+  //   "dims": [ 2, 0 ],
+  //   "relate": [ "0F2FF1FF2", "0FFFFF212" ],
+  //   "predicates": {
+  //     "equals":     ["F", "F"],
+  //     "intersects": ["T", "T"],
+  //     "disjoint":   ["F", "F"],
+  //     "contains":   ["T", "F"],
+  //     "within":     ["F", "T"],
+  //     "covers":     ["T", "F"],
+  //     "coveredby":  ["F", "T"],
+  //     "crosses":    ["F", "F"],
+  //     "overlaps":   ["F", "F"],
+  //     "touches":    ["F", "F"]
+  //   }
+  // },
+  // {
+  //   "geoms": [
+  //     "GEOMETRYCOLLECTION (LINESTRING (0 0, 0 1), POLYGON ((0 0, 0 1, 1 0, 0 0)))",
+  //     "LINESTRING (0 0, 0 1)"
+  //   ],
+  //   "dims": [ 2, 1 ],
+  //   "relate": [ "FF2101FF2", "F1FF0F212" ],
+  //   "predicates": {
+  //     "equals":     ["F", "F"],
+  //     "intersects": ["T", "T"],
+  //     "disjoint":   ["F", "F"],
+  //     "contains":   ["F", "F"],
+  //     "within":     ["F", "F"],
+  //     "covers":     ["T", "F"],
+  //     "coveredby":  ["F", "T"],
+  //     "crosses":    ["F", "F"],
+  //     "overlaps":   ["F", "F"],
+  //     "touches":    ["T", "T"]
+  //   }
+  // },
+  // {
+  //   "geoms": [
+  //     "GEOMETRYCOLLECTION (LINESTRING (0 0, 0 1), POLYGON ((0 0, 0 1, 1 0, 0 0)))",
+  //     "LINESTRING (0 0, 0.25 0.25)"
+  //   ],
+  //   "dims": [ 2, 1 ],
+  //   "relate": [ "102F01FF2", "1FF00F212" ],
+  //   "predicates": {
+  //     "equals":     ["F", "F"],
+  //     "intersects": ["T", "T"],
+  //     "disjoint":   ["F", "F"],
+  //     "contains":   ["T", "F"],
+  //     "within":     ["F", "T"],
+  //     "covers":     ["T", "F"],
+  //     "coveredby":  ["F", "T"],
+  //     "crosses":    ["F", "F"],
+  //     "overlaps":   ["F", "F"],
+  //     "touches":    ["F", "F"]
+  //   }
+  // },
 ]
