@@ -6558,25 +6558,116 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
     return false;
 }
 
+// For a single-point segment intersection, count the endpoints of the whole
+// geometry at that intersection. This avoids calculating a new coordinate and
+// also finds boundary points belonging to components outside the segment pair.
+static bool multiline_boundary_intersection(const struct tg_geom *geom,
+    struct tg_segment a, struct tg_segment b)
+{
+    const struct tg_line *single = tg_geom_line(geom);
+    int nlines = single ? 1 : tg_geom_num_lines(geom);
+    bool boundary = false;
+    for (int i = 0; i < nlines; i++) {
+        const struct tg_line *line = single ? single : tg_geom_line_at(geom, i);
+        int npoints = tg_line_num_points(line);
+        if (npoints < 2) {
+            continue;
+        }
+        struct tg_point endpoints[] = {
+            tg_line_point_at(line, 0),
+            tg_line_point_at(line, npoints-1),
+        };
+        for (int j = 0; j < 2; j++) {
+            if (tg_segment_covers_point(a, endpoints[j]) &&
+                tg_segment_covers_point(b, endpoints[j]))
+            {
+                boundary = !boundary;
+            }
+        }
+    }
+    return boundary;
+}
+
+struct multiline_touches_iter_ctx {
+    const struct tg_geom *a;
+    const struct tg_geom *b;
+    bool intersects;
+    bool interior;
+};
+
+static bool multiline_touches_iter(struct tg_segment a, int aidx,
+    struct tg_segment b, int bidx, void *udata)
+{
+    (void)aidx;
+    (void)bidx;
+    struct multiline_touches_iter_ctx *ctx = udata;
+    ctx->intersects = true;
+
+    // Two distinct shared endpoints imply a positive-length overlap. A finite
+    // set of boundary points cannot remove its interior/interior intersection.
+    struct tg_point endpoints[] = { a.a, a.b, b.a, b.b };
+    struct tg_point shared = { 0 };
+    bool found = false;
+    for (int i = 0; i < 4; i++) {
+        if (tg_segment_covers_point(a, endpoints[i]) &&
+            tg_segment_covers_point(b, endpoints[i]))
+        {
+            if (found && !pteq(shared, endpoints[i])) {
+                ctx->interior = true;
+                return false;
+            }
+            shared = endpoints[i];
+            found = true;
+        }
+    }
+    // The intersection is a single point, possibly in both segment interiors.
+    // It must belong to the boundary of at least one whole operand.
+    if (!multiline_boundary_intersection(ctx->a, a, b) &&
+        !multiline_boundary_intersection(ctx->b, a, b))
+    {
+        ctx->interior = true;
+        return false;
+    }
+    return true;
+}
+
+static bool multiline_touches_linear(const struct tg_geom *geom,
+    const struct tg_geom *other)
+{
+    struct multiline_touches_iter_ctx ctx = { .a = geom, .b = other };
+    const struct tg_line *single = tg_geom_line(other);
+    int nlines = single ? 1 : tg_geom_num_lines(other);
+    for (int i = 0; i < tg_geom_num_lines(geom); i++) {
+        const struct tg_line *line = tg_geom_line_at(geom, i);
+        for (int j = 0; j < nlines; j++) {
+            const struct tg_line *other_line = single ? single :
+                tg_geom_line_at(other, j);
+            tg_line_line_search(line, other_line, multiline_touches_iter, &ctx);
+            if (ctx.interior) {
+                return false;
+            }
+        }
+    }
+    return ctx.intersects;
+}
+
 static bool multilinestring_touches_point(const struct tg_geom *geom,
     struct tg_point point)
 {
-    struct boxed_point other = { .point = point };
-    other.head.base = BASE_POINT;
-    other.head.type = TG_POINT;
-    return multi_touches_geom(geom, (const struct tg_geom*)&other);
+    struct tg_segment singleton = { point, point };
+    return multiline_boundary_intersection(geom, singleton, singleton);
 }
 
 static bool multilinestring_touches_line(const struct tg_geom *geom,
     struct tg_line *line)
 {
-    return multi_touches_geom(geom, (const struct tg_geom*)line);
+    return multiline_touches_linear(geom, (const struct tg_geom*)line);
 }
 
 static bool multilinestring_touches_multilinestring(const struct tg_geom *geom,
     const struct tg_geom *other)
 {
-    return multi_touches_geom(geom, other);
+    return multiline_touches_linear(geom, other);
 }
 
 /// Tests whether a geometry 'a' touches 'b'. 
