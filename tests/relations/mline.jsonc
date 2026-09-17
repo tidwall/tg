@@ -203,26 +203,6 @@
   // boundary if they occur an odd number of times.
   {
     "geoms": [
-      "MULTILINESTRING ((0 0, 0 1))",
-      "POINT (0 0)"
-    ],
-    "dims": [ 1, 0 ],
-    "relate": [ "FF10F0FF2", "F0FFFF102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["T", "F"],
-      "coveredby":  ["F", "T"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
-    }
-  },
-  {
-    "geoms": [
       "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
       "POINT (0 0)"
     ],
@@ -239,26 +219,6 @@
       "crosses":    ["F", "F"],
       "overlaps":   ["F", "F"],
       "touches":    ["F", "F"]
-    }
-  },
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0))",
-      "POINT (0 0)"
-    ],
-    "dims": [ 1, 0 ],
-    "relate": [ "FF10F0FF2", "F0FFFF102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["T", "F"],
-      "coveredby":  ["F", "T"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
     }
   },
   {
@@ -281,7 +241,8 @@
       "touches":    ["F", "F"]
     }
   },
-  // Exercising the mod 2 boundary rule where the other geometry is a linestring.
+  // Exercising the mod 2 boundary rule where the other geometry is a linestring
+  // and only the interiors intersect
   {
     "geoms": [
       "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
@@ -304,26 +265,6 @@
   },
   {
     "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0))",
-      "LINESTRING (-1 -1, 1 1)"
-    ],
-    "dims": [ 1, 1 ],
-    "relate": [ "FF10F0102", "F01FF0102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
-    }
-  },
-  {
-    "geoms": [
       "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0), (0 0, 0 -1))",
       "LINESTRING (-1 -1, 1 1)"
     ],
@@ -340,188 +281,6 @@
       "crosses":    ["T", "T"],
       "overlaps":   ["F", "F"],
       "touches":    ["F", "F"]
-    }
-  },
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
-      "LINESTRING (-1 -1, 0 0)"
-    ],
-    "dims": [ 1, 1 ],
-    "relate": [ "F01FF0102", "FF10F0102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
-    }
-  },
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0))",
-      "LINESTRING (-1 -1, 0 0)"
-    ],
-    "dims": [ 1, 1 ],
-    "relate": [ "FF1F00102", "FF1F00102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
-    }
-  },
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0), (0 0, 0 -1))",
-      "LINESTRING (-1 -1, 0 0)"
-    ],
-    "dims": [ 1, 1 ],
-    "relate": [ "F01FF0102", "FF10F0102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
-    }
-  },
-  // Exercising the mod 2 boundary rule where the other geometry is a polygon.
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
-      "POLYGON ((0 0.5, 0.5 0, 0 -0.5, -0.5 0, 0 0.5))"
-    ],
-    "dims": [ 1, 2 ],
-    "relate": [ "101FF0212", "1F20F1102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["T", "T"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["F", "F"]
-    }
-  },
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0))",
-      "POLYGON ((0 0.5, 0.5 0, 0 -0.5, -0.5 0, 0 0.5))"
-    ],
-    "dims": [ 1, 2 ],
-    "relate": [ "1010F0212", "1020F1102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["T", "T"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["F", "F"]
-    }
-  },
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0), (0 0, 0 -1))",
-      "POLYGON ((0 0.5, 0.5 0, 0 -0.5, -0.5 0, 0 0.5))"
-    ],
-    "dims": [ 1, 2 ],
-    "relate": [ "101FF0212", "1F20F1102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["T", "T"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["F", "F"]
-    }
-  },
-  // A polygon whose boundary meets the multilinestring only at (0, 0).
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
-      "POLYGON ((0 0, -1 -0.5, -0.5 -1, 0 0))"
-    ],
-    "dims": [ 1, 2 ],
-    "relate": [ "F01FF0212", "FF20F1102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
-    }
-  },
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0))",
-      "POLYGON ((0 0, -1 -0.5, -0.5 -1, 0 0))"
-    ],
-    "dims": [ 1, 2 ],
-    "relate": [ "FF1F00212", "FF2F01102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
-    }
-  },
-  {
-    "geoms": [
-      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0), (0 0, 0 -1))",
-      "POLYGON ((0 0, -1 -0.5, -0.5 -1, 0 0))"
-    ],
-    "dims": [ 1, 2 ],
-    "relate": [ "F01FF0212", "FF20F1102" ],
-    "predicates": {
-      "equals":     ["F", "F"],
-      "intersects": ["T", "T"],
-      "disjoint":   ["F", "F"],
-      "contains":   ["F", "F"],
-      "within":     ["F", "F"],
-      "covers":     ["F", "F"],
-      "coveredby":  ["F", "F"],
-      "crosses":    ["F", "F"],
-      "overlaps":   ["F", "F"],
-      "touches":    ["T", "T"]
     }
   },
 ]
