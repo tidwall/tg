@@ -402,4 +402,65 @@
       "touches":    ["T", "T"]
     }
   },
+  // Exercising the mod 2 boundary rule where the other geometry is a polygon.
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
+      "POLYGON ((0 0.5, 0.5 0, 0 -0.5, -0.5 0, 0 0.5))"
+    ],
+    "dims": [ 1, 2 ],
+    "relate": [ "101FF0212", "1F20F1102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0))",
+      "POLYGON ((0 0.5, 0.5 0, 0 -0.5, -0.5 0, 0 0.5))"
+    ],
+    "dims": [ 1, 2 ],
+    "relate": [ "1010F0212", "1020F1102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0), (0 0, 0 -1))",
+      "POLYGON ((0 0.5, 0.5 0, 0 -0.5, -0.5 0, 0 0.5))"
+    ],
+    "dims": [ 1, 2 ],
+    "relate": [ "101FF0212", "1F20F1102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
 ]
