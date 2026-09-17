@@ -405,4 +405,26 @@
       "touches":    ["T", "T"]
     }
   },
+  // A boundary endpoint also lies in another child's interior.
+  // Touches must be symmetric and use the multiline boundary.
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 1 0), (0 0, 2 0))",
+      "POINT (1 0)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "FF10F0FF2", "F0FFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
 ]
