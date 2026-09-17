@@ -6222,6 +6222,27 @@ static bool geom_as_point(const struct tg_geom *geom, struct tg_point *point) {
     }
 }
 
+static bool geom_as_line(const struct tg_geom *geom,
+    const struct tg_line **line)
+{
+    if (!geom) {
+        return false;
+    }
+    switch (geom->head.base) {
+    case BASE_GEOM:
+        if (geom->head.type == TG_LINESTRING) {
+            *line = geom->line;
+            return true;
+        }
+        return false;
+    case BASE_LINE:
+        *line = (const struct tg_line*)geom;
+        return true;
+    default:
+        return false;
+    }
+}
+
 static enum multiline_point_position multiline_point_position(
     const struct tg_geom *geom, struct tg_point point)
 {
@@ -6260,6 +6281,43 @@ static enum multiline_point_position multiline_point_position(
         return MULTILINE_POINT_INTERIOR;
     }
     return MULTILINE_POINT_EXTERIOR;
+}
+
+static bool multiline_touches_line(const struct tg_geom *geom,
+    const struct tg_line *other)
+{
+    bool intersects = false;
+    if (!geom->multi) {
+        return false;
+    }
+    for (int i = 0; i < geom->multi->ngeoms; i++) {
+        const struct tg_line *line =
+            (const struct tg_line*)geom->multi->geoms[i];
+        if (!tg_line_intersects_line(line, other)) {
+            continue;
+        }
+        intersects = true;
+        if (!tg_line_touches_line(line, other)) {
+            return false;
+        }
+        int npoints = tg_line_num_points(line);
+        if (npoints < 2) {
+            continue;
+        }
+        struct tg_point endpoints[] = {
+            tg_line_point_at(line, 0),
+            tg_line_point_at(line, npoints-1),
+        };
+        for (int j = 0; j < 2; j++) {
+            if (tg_line_contains_point(other, endpoints[j]) &&
+                multiline_point_position(geom, endpoints[j]) ==
+                    MULTILINE_POINT_INTERIOR)
+            {
+                return false;
+            }
+        }
+    }
+    return intersects;
 }
 
 struct geom_contains_iter_ctx {
@@ -6612,6 +6670,17 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
 /// intersect.
 /// @see GeometryPredicates
 bool tg_geom_touches(const struct tg_geom *geom, const struct tg_geom *other) {
+    const struct tg_line *line;
+    if (geom && geom->head.base == BASE_GEOM &&
+        geom->head.type == TG_MULTILINESTRING && geom_as_line(other, &line))
+    {
+        return multiline_touches_line(geom, line);
+    }
+    if (other && other->head.base == BASE_GEOM &&
+        other->head.type == TG_MULTILINESTRING && geom_as_line(geom, &line))
+    {
+        return multiline_touches_line(other, line);
+    }
     if (geom) {
         switch (geom->head.base) {
         case BASE_GEOM:

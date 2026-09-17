@@ -281,7 +281,67 @@
       "touches":    ["F", "F"]
     }
   },
-  // A linestring that meets the multilinestring only at its endpoint.
+  // Exercising the mod 2 boundary rule where the other geometry is a linestring.
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
+      "LINESTRING (-1 -1, 1 1)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1FF0102", "0F1FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0))",
+      "LINESTRING (-1 -1, 1 1)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "FF10F0102", "F01FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0), (0 0, 0 -1))",
+      "LINESTRING (-1 -1, 1 1)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1FF0102", "0F1FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
   {
     "geoms": [
       "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
