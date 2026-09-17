@@ -281,4 +281,65 @@
       "touches":    ["F", "F"]
     }
   },
+  // A linestring that meets the multilinestring only at its endpoint.
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0))",
+      "LINESTRING (-1 -1, 0 0)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "F01FF0102", "FF10F0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0))",
+      "LINESTRING (-1 -1, 0 0)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "FF1F00102", "FF1F00102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 1), (0 0, 1 0), (0 0, -1 0), (0 0, 0 -1))",
+      "LINESTRING (-1 -1, 0 0)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "F01FF0102", "FF10F0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
 ]
