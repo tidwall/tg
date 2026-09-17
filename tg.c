@@ -6320,6 +6320,13 @@ bool tg_point_contains_geom(struct tg_point a, const struct tg_geom *b) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+static bool multilinestring_touches_point(const struct tg_geom *geom,
+    struct tg_point point);
+static bool multilinestring_touches_line(const struct tg_geom *geom,
+    struct tg_line *line);
+static bool multilinestring_touches_multilinestring(const struct tg_geom *geom,
+    const struct tg_geom *other);
+
 static bool point_touches_geom(struct tg_point point,
     const struct tg_geom *geom);
 
@@ -6334,8 +6341,9 @@ static bool point_touches_base_geom(struct tg_point point,
             return tg_point_touches_line(point, geom->line);
         case TG_POLYGON: 
             return tg_point_touches_poly(point, geom->poly);
-        case TG_MULTIPOINT: 
-        case TG_MULTILINESTRING: 
+        case TG_MULTILINESTRING:
+            return multilinestring_touches_point(geom, point);
+        case TG_MULTIPOINT:
         case TG_MULTIPOLYGON:
         case TG_GEOMETRYCOLLECTION:
             if (geom->multi) {
@@ -6386,8 +6394,9 @@ static bool line_touches_base_geom(struct tg_line *line,
             return tg_line_touches_line(line, geom->line);
         case TG_POLYGON: 
             return tg_line_touches_poly(line, geom->poly);
-        case TG_MULTIPOINT: 
-        case TG_MULTILINESTRING: 
+        case TG_MULTILINESTRING:
+            return multilinestring_touches_line(geom, line);
+        case TG_MULTIPOINT:
         case TG_MULTIPOLYGON:
         case TG_GEOMETRYCOLLECTION: 
             if (geom->multi) {
@@ -6480,6 +6489,23 @@ static bool poly_touches_geom(struct tg_poly *poly,
     return false;
 }
 
+static bool multi_touches_geom(const struct tg_geom *geom,
+    const struct tg_geom *other)
+{
+    bool touches = false;
+    if (geom->multi) {
+        for (int i = 0; i < geom->multi->ngeoms; i++) {
+            const struct tg_geom *child = geom->multi->geoms[i];
+            if (tg_geom_touches(child, other)) {
+                touches = true;
+            } else if (tg_geom_intersects(child, other)) {
+                return false;
+            }
+        }
+    }
+    return touches;
+}
+
 static bool base_geom_touches_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
@@ -6491,25 +6517,66 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
             return line_touches_geom(geom->line, other);
         case TG_POLYGON: 
             return poly_touches_geom(geom->poly, other);
-        case TG_MULTIPOINT: 
-        case TG_MULTILINESTRING: 
-        case TG_MULTIPOLYGON:
-        case TG_GEOMETRYCOLLECTION: {
-            bool touches = false;
-            if (geom->multi) {
-                for (int i = 0; i < geom->multi->ngeoms; i++) {
-                    const struct tg_geom *child = geom->multi->geoms[i];
-                    if (tg_geom_touches(child, other)) {
-                        touches = true;
-                    } else if (tg_geom_intersects(child, other)) {
-                        return false;
+        case TG_MULTILINESTRING:
+            if (other) {
+                switch (other->head.base) {
+                case BASE_POINT:
+                    return multilinestring_touches_point(geom,
+                        ((struct boxed_point*)other)->point);
+                case BASE_LINE:
+                    return multilinestring_touches_line(geom,
+                        (struct tg_line*)other);
+                case BASE_GEOM:
+                    if ((other->head.flags&IS_EMPTY) == IS_EMPTY) {
+                        break;
                     }
+                    switch (other->head.type) {
+                    case TG_POINT:
+                        return multilinestring_touches_point(geom,
+                            other->point);
+                    case TG_LINESTRING:
+                        return multilinestring_touches_line(geom,
+                            other->line);
+                    case TG_MULTILINESTRING:
+                        return multilinestring_touches_multilinestring(geom,
+                            other);
+                    default:
+                        break;
+                    }
+                    break;
+                default:
+                    break;
                 }
             }
-            return touches;
+            return multi_touches_geom(geom, other);
+        case TG_MULTIPOINT:
+        case TG_MULTIPOLYGON:
+        case TG_GEOMETRYCOLLECTION: {
+            return multi_touches_geom(geom, other);
          }}
     }
     return false;
+}
+
+static bool multilinestring_touches_point(const struct tg_geom *geom,
+    struct tg_point point)
+{
+    struct boxed_point other = { .point = point };
+    other.head.base = BASE_POINT;
+    other.head.type = TG_POINT;
+    return multi_touches_geom(geom, (const struct tg_geom*)&other);
+}
+
+static bool multilinestring_touches_line(const struct tg_geom *geom,
+    struct tg_line *line)
+{
+    return multi_touches_geom(geom, (const struct tg_geom*)line);
+}
+
+static bool multilinestring_touches_multilinestring(const struct tg_geom *geom,
+    const struct tg_geom *other)
+{
+    return multi_touches_geom(geom, other);
 }
 
 /// Tests whether a geometry 'a' touches 'b'. 
