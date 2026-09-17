@@ -58,5 +58,25 @@
       "overlaps":   ["F", "F"],
       "touches":    ["F", "F"]
     }
-  }
+  },
+  {
+    "geoms": [
+      "GEOMETRYCOLLECTION (POINT (0 0), LINESTRING (0 0, 0 1))",
+      "POINT (0 0)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "FF10F0FF2", "F0FFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
 ]
