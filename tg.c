@@ -6230,6 +6230,21 @@ static bool geom_contains_iter(const struct tg_geom *geom, void *udata) {
     return true;
 }
 
+static bool multiline_boundary_point(const struct tg_geom *geom,
+    struct tg_point point);
+
+static bool multilinestring_contains_point(const struct tg_geom *geom,
+    struct tg_point point);
+
+static bool multi_contains_geom(const struct tg_geom *geom,
+    const struct tg_geom *other)
+{
+    // all children of 'other' must be fully within 'geom'
+    struct geom_contains_iter_ctx ctx = { .geom = geom };
+    tg_geom_foreach(other, geom_contains_iter, &ctx);
+    return ctx.result;
+}
+
 static bool base_geom_contains_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
@@ -6241,15 +6256,27 @@ static bool base_geom_contains_geom(const struct tg_geom *geom,
             return line_contains_geom(geom->line, other);
         case TG_POLYGON:
             return poly_contains_geom(geom->poly, other);
-        case TG_MULTIPOINT:
         case TG_MULTILINESTRING:
+            if (other) {
+                switch (other->head.base) {
+                case BASE_POINT:
+                    return multilinestring_contains_point(geom,
+                        ((struct boxed_point*)other)->point);
+                case BASE_GEOM:
+                    if (other->head.type == TG_POINT) {
+                        return (other->head.flags&IS_EMPTY) != IS_EMPTY &&
+                            multilinestring_contains_point(geom, other->point);
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+            return multi_contains_geom(geom, other);
+        case TG_MULTIPOINT:
         case TG_MULTIPOLYGON:
-        case TG_GEOMETRYCOLLECTION: {
-            // all children of 'other' must be fully within 'geom'
-            struct geom_contains_iter_ctx ctx = { .geom = geom };
-            tg_geom_foreach(other, geom_contains_iter, &ctx);
-            return ctx.result;
-        }
+        case TG_GEOMETRYCOLLECTION:
+            return multi_contains_geom(geom, other);
         }
     }
     return false;
@@ -6274,6 +6301,16 @@ static bool point_contains_geom(struct tg_point point,
         }
     }
     return false;
+}
+
+static bool multiline_boundary_point(const struct tg_geom *geom,
+    struct tg_point point);
+
+static bool multilinestring_contains_point(const struct tg_geom *geom,
+    struct tg_point point)
+{
+    return tg_geom_covers_point(geom, point) &&
+        !multiline_boundary_point(geom, point);
 }
 
 /// Tests whether 'a' contains 'b', and 'b' is not touching the boundary of 'a'.
@@ -6588,6 +6625,13 @@ static bool multiline_boundary_intersection(const struct tg_geom *geom,
     return boundary;
 }
 
+static bool multiline_boundary_point(const struct tg_geom *geom,
+    struct tg_point point)
+{
+    struct tg_segment singleton = { point, point };
+    return multiline_boundary_intersection(geom, singleton, singleton);
+}
+
 struct multiline_touches_iter_ctx {
     const struct tg_geom *a;
     const struct tg_geom *b;
@@ -6654,8 +6698,7 @@ static bool multiline_touches_linear(const struct tg_geom *geom,
 static bool multilinestring_touches_point(const struct tg_geom *geom,
     struct tg_point point)
 {
-    struct tg_segment singleton = { point, point };
-    return multiline_boundary_intersection(geom, singleton, singleton);
+    return multiline_boundary_point(geom, point);
 }
 
 static bool multilinestring_touches_line(const struct tg_geom *geom,
