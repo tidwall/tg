@@ -854,4 +854,46 @@
       "touches":    ["T", "T"]
     }
   },
+  // Line that touches a polygon at a vertex of its hole
+  {
+    "geoms": [
+      "POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (3 3, 5 5, 7 3, 7 7, 3 7, 3 3))",
+      "LINESTRING (4 5, 6 5)"
+    ],
+    "dims": [ 2, 1 ],
+    "relate": [ "FF20F1102", "F01FF0212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  // Line that touches a polygon at an edge of its hole (not just a vertex)
+  {
+    "geoms": [
+      "POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (3 3, 4 5, 6 5, 7 3, 7 7, 3 7, 3 3))",
+      "LINESTRING (3.5 5, 6.5 5)"
+    ],
+    "dims": [ 2, 1 ],
+    "relate": [ "FF20F1102", "F01FF0212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
 ]
