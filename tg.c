@@ -6208,21 +6208,20 @@ struct geom_contains_iter_ctx {
 
 static bool geom_contains_iter0(const struct tg_geom *geom, void *udata) {
     struct geom_contains_iter_ctx *ctx = udata;
-    if (tg_geom_is_empty(geom)) {
-        return true;
-    }
-    int dim = tg_geom_de9im_dims(geom);
-    if (tg_geom_contains(geom, ctx->geom)) {
-        if (dim > ctx->max_contains_dim) {
-            ctx->max_contains_dim = dim;
-        }
-        if (dim > ctx->max_cover_dim) {
+    if (!tg_geom_is_empty(geom)) {
+        int dim = tg_geom_de9im_dims(geom);
+        if (tg_geom_contains(geom, ctx->geom)) {
+            if (dim > ctx->max_contains_dim) {
+                ctx->max_contains_dim = dim;
+            }
+            if (dim > ctx->max_cover_dim) {
+                ctx->max_cover_dim = dim;
+            }
+        } else if (tg_geom_covers(geom, ctx->geom) &&
+            dim > ctx->max_cover_dim)
+        {
             ctx->max_cover_dim = dim;
         }
-    } else if (tg_geom_covers(geom, ctx->geom) &&
-        dim > ctx->max_cover_dim)
-    {
-        ctx->max_cover_dim = dim;
     }
     return true;
 }
@@ -6425,7 +6424,7 @@ static bool line_touches_base_geom(struct tg_line *line,
                     }
                 }
             }
-            return false;
+            // fallthrough
         }
     }
     return false;
@@ -6568,16 +6567,13 @@ static bool geometrycollection_touches_other_iter(const struct tg_geom *geom,
 {
     struct geometrycollection_touches_child_ctx *child_ctx = udata;
     struct geometrycollection_touches_ctx *ctx = child_ctx->ctx;
-    if (tg_geom_is_empty(geom) ||
-        tg_geom_de9im_dims(geom) < ctx->other_dim)
-    {
-        return true;
-    }
-    if (tg_geom_touches(child_ctx->child, geom)) {
-        ctx->touches = true;
-    } else if (tg_geom_intersects(child_ctx->child, geom)) {
-        ctx->interior_intersects = true;
-        return false;
+    if (!tg_geom_is_empty(geom) && tg_geom_de9im_dims(geom) >= ctx->other_dim) {
+        if (tg_geom_touches(child_ctx->child, geom)) {
+            ctx->touches = true;
+        } else if (tg_geom_intersects(child_ctx->child, geom)) {
+            ctx->interior_intersects = true;
+            return false;
+        }
     }
     return true;
 }
@@ -6586,18 +6582,18 @@ static bool geometrycollection_touches_iter(const struct tg_geom *geom,
     void *udata)
 {
     struct geometrycollection_touches_ctx *ctx = udata;
-    if (tg_geom_is_empty(geom) ||
-        tg_geom_de9im_dims(geom) < ctx->collection_dim)
+    if (!tg_geom_is_empty(geom) &&
+        tg_geom_de9im_dims(geom) >= ctx->collection_dim)
     {
-        return true;
+        struct geometrycollection_touches_child_ctx child_ctx = {
+            .ctx = ctx,
+            .child = geom,
+        };
+        tg_geom_foreach(ctx->other, geometrycollection_touches_other_iter,
+            &child_ctx);
+        return !ctx->interior_intersects;
     }
-    struct geometrycollection_touches_child_ctx child_ctx = {
-        .ctx = ctx,
-        .child = geom,
-    };
-    tg_geom_foreach(ctx->other, geometrycollection_touches_other_iter,
-        &child_ctx);
-    return !ctx->interior_intersects;
+    return true;
 }
 
 static bool geometrycollection_touches_geom(const struct tg_geom *geom,
