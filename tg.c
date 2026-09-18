@@ -3029,16 +3029,45 @@ bool tg_ring_contains_segment(const struct tg_ring *ring,
 }
 
 struct intersegiterctx {
+    const struct tg_ring *ring;
     struct tg_segment seg;
     int count;
     bool allow_on_edge;
     bool seg_a_on;
     bool seg_b_on;
+    bool has_intersection;
+    double intersection_t;
     // bool yes;
 };
 
+static bool ring_vertex_is_convex_tangent(const struct tg_ring *ring,
+    int index, struct tg_segment seg)
+{
+    // A line through a convex vertex is tangent when both incident ring
+    // edges stay on the same side of the line. A reflex vertex or incident
+    // edges on opposite sides expose polygon interior to the line.
+    int nsegs = ring->nsegs;
+    struct tg_point prev = ring->points[(index+nsegs-1)%nsegs];
+    struct tg_point vertex = ring->points[index];
+    struct tg_point next = ring->points[(index+1)%nsegs];
+    double in_x = vertex.x-prev.x;
+    double in_y = vertex.y-prev.y;
+    double out_x = next.x-vertex.x;
+    double out_y = next.y-vertex.y;
+    double turn = in_x*out_y-in_y*out_x;
+    bool convex = ring->clockwise ? turn < 0 : turn > 0;
+    if (!convex) {
+        return false;
+    }
+    double seg_x = seg.b.x-seg.a.x;
+    double seg_y = seg.b.y-seg.a.y;
+    double prev_side = seg_x*(prev.y-vertex.y)-seg_y*(prev.x-vertex.x);
+    double next_side = seg_x*(next.y-vertex.y)-seg_y*(next.x-vertex.x);
+    return (prev_side < 0 && next_side < 0) ||
+           (prev_side > 0 && next_side > 0);
+}
+
 static bool intersegiter(struct tg_segment seg, int index, void *udata) {
-    (void)index;
     struct intersegiterctx *ctx = udata;
 
     if (!tg_segment_intersects_segment(ctx->seg, seg)) {
@@ -3062,6 +3091,7 @@ static bool intersegiter(struct tg_segment seg, int index, void *udata) {
     if (ccol && dcol) {
         // lines are parallel.
         ctx->count = 0;
+        ctx->has_intersection = false;
     } else if (!ccol || !dcol) {
         if (!ctx->seg_a_on) {
             if (pteq(a, c) || pteq(a, d)) {
@@ -3075,6 +3105,22 @@ static bool intersegiter(struct tg_segment seg, int index, void *udata) {
                 return true;
             }
         }
+        if (ccol || dcol) {
+            int vertex = ccol ? index : (index+1)%ctx->ring->nsegs;
+            if (ring_vertex_is_convex_tangent(ctx->ring, vertex, ctx->seg)) {
+                return true;
+            }
+        }
+        double rx = b.x-a.x;
+        double ry = b.y-a.y;
+        double sx = d.x-c.x;
+        double sy = d.y-c.y;
+        double t = ((c.x-a.x)*sy-(c.y-a.y)*sx) / (rx*sy-ry*sx);
+        if (ctx->has_intersection && t == ctx->intersection_t) {
+            return true;
+        }
+        ctx->has_intersection = true;
+        ctx->intersection_t = t;
         ctx->count++;
     }
     return ctx->count < 2;
@@ -3097,6 +3143,7 @@ bool tg_ring_intersects_segment(const struct tg_ring *ring,
     // are on the outside and are passing over segments. If the segment passes
     // over at least two ring segments then it's intersecting.
     struct intersegiterctx ctx = { 
+        .ring = ring,
         .seg = seg,
         .allow_on_edge = allow_on_edge,
     };
@@ -4133,40 +4180,45 @@ bool tg_poly_intersects_poly(const struct tg_poly *poly,
     return true;
 }
 
+static bool ring_line_boundary_intersects_iter(struct tg_segment aseg,
+    int aidx, struct tg_segment bseg, int bidx, void *udata)
+{
+    (void)aseg;
+    (void)aidx;
+    (void)bseg;
+    (void)bidx;
+    *(bool *)udata = true;
+    return false;
+}
+
+static bool ring_line_boundary_intersects(const struct tg_ring *ring,
+    const struct tg_line *line)
+{
+    bool intersects = false;
+    tg_ring_line_search(ring, line, ring_line_boundary_intersects_iter,
+        &intersects);
+    return intersects;
+}
+
 bool tg_poly_touches_line(const struct tg_poly *a, const struct tg_line *b) {
     if (!tg_rect_intersects_rect(tg_poly_rect(a), tg_line_rect(b))) {
         return false;
     }
 
     // Check if the line is inside any of the polygon holes
-    int npoints = tg_line_num_points(b);
     int nholes = tg_poly_num_holes(a);
     for (int i = 0; i < nholes; i++) {
         const struct tg_ring *hole = tg_poly_hole_at(a, i);
         if (tg_ring_contains_line(hole, b, true, false)) {
-            // Yes, now check if any of the points touch the hole boundary.
-            for (int j = 0; j < npoints; j++) {
-                struct tg_point point = tg_line_point_at(b, j);
-                if (tg_line_covers_point((struct tg_line*)hole, point)) {
-                    return true;
-                }
-            }
-            return false;
+            // Yes, now check if the line touches the hole boundary.
+            return ring_line_boundary_intersects(hole, b);
         }
     }
 
-    // Check if at least one line point touches the polygon exterior.
+    // Check if the line touches the polygon exterior. The intersection may
+    // fall in the interior of a line segment rather than on a line point.
     const struct tg_ring *ring = tg_poly_exterior(a);
-    bool touches = false;
-    for (int i = 0; i < npoints; i++) {
-        struct tg_point point = tg_line_point_at(b, i);
-        // Cast the exterior ring to a polygon to avoid holes.
-        if (tg_poly_touches_point((struct tg_poly*)ring, point)) {
-            touches = true;
-            break;
-        }
-    }
-    if (!touches) {
+    if (!ring_line_boundary_intersects(ring, b)) {
         return false;
     }
     int nsegs = tg_line_num_segments(b);
