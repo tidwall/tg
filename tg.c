@@ -6230,9 +6230,6 @@ static bool geom_contains_iter(const struct tg_geom *geom, void *udata) {
     return true;
 }
 
-static bool multiline_boundary_point(const struct tg_geom *geom,
-    struct tg_point point);
-
 static bool multilinestring_contains_point(const struct tg_geom *geom,
     struct tg_point point);
 
@@ -6359,8 +6356,10 @@ bool tg_point_contains_geom(struct tg_point a, const struct tg_geom *b) {
 
 static bool multilinestring_touches_point(const struct tg_geom *geom,
     struct tg_point point);
+
 static bool multilinestring_touches_line(const struct tg_geom *geom,
     struct tg_line *line);
+
 static bool multilinestring_touches_multilinestring(const struct tg_geom *geom,
     const struct tg_geom *other);
 
@@ -6592,9 +6591,9 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
             return multi_touches_geom(geom, other);
         case TG_MULTIPOINT:
         case TG_MULTIPOLYGON:
-        case TG_GEOMETRYCOLLECTION: {
+        case TG_GEOMETRYCOLLECTION:
             return multi_touches_geom(geom, other);
-         }}
+        }
     }
     return false;
 }
