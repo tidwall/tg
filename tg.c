@@ -6435,16 +6435,20 @@ static bool line_touches_base_geom(struct tg_line *line,
             return multilinestring_touches_line(geom, line);
         case TG_MULTIPOINT:
         case TG_MULTIPOLYGON:
-        case TG_GEOMETRYCOLLECTION: 
+        case TG_GEOMETRYCOLLECTION: {
+            bool touches = false;
             if (geom->multi) {
                 for (int i = 0; i < geom->multi->ngeoms; i++) {
-                    if (line_touches_geom(line, geom->multi->geoms[i])) {
-                        return true;
+                    const struct tg_geom *child = geom->multi->geoms[i];
+                    if (line_touches_geom(line, child)) {
+                        touches = true;
+                    } else if (line_intersects_geom(line, child)) {
+                        return false;
                     }
                 }
             }
-            return false;
-        }
+            return touches;
+        }}
     }
     return false;
 }
