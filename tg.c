@@ -6200,16 +6200,29 @@ static bool point_contains_base_geom(struct tg_point point,
 struct geom_contains_iter_ctx {
     const struct tg_geom *geom;
     int min_dim;
+    int max_cover_dim;
+    int max_contains_dim;
     bool result;
 };
 
 
 static bool geom_contains_iter0(const struct tg_geom *geom, void *udata) {
     struct geom_contains_iter_ctx *ctx = udata;
+    if (tg_geom_is_empty(geom)) {
+        return true;
+    }
+    int dim = tg_geom_de9im_dims(geom);
     if (tg_geom_contains(geom, ctx->geom)) {
-        // found a child object that contains geom, end inner loop
-        ctx->result = true;
-        return false;
+        if (dim > ctx->max_contains_dim) {
+            ctx->max_contains_dim = dim;
+        }
+        if (dim > ctx->max_cover_dim) {
+            ctx->max_cover_dim = dim;
+        }
+    } else if (tg_geom_covers(geom, ctx->geom) &&
+        dim > ctx->max_cover_dim)
+    {
+        ctx->max_cover_dim = dim;
     }
     return true;
 }
@@ -6220,9 +6233,15 @@ static bool geom_contains_iter(const struct tg_geom *geom, void *udata) {
     if (!tg_geom_is_empty(geom) &&
         tg_geom_de9im_dims(geom) >= ctx->min_dim)
     {
-        struct geom_contains_iter_ctx ctx0 = { .geom = geom };
+        struct geom_contains_iter_ctx ctx0 = {
+            .geom = geom,
+            .max_cover_dim = -1,
+            .max_contains_dim = -1,
+        };
         tg_geom_foreach(ctx->geom, geom_contains_iter0, &ctx0);
-        if (ctx0.result) {
+        if (ctx0.max_contains_dim >= 0 &&
+            ctx0.max_contains_dim == ctx0.max_cover_dim)
+        {
             // At least one highest-dimension child of 'other' intersects the
             // interior of 'geom'. Coverage is checked before this iteration.
             ctx->result = true;
