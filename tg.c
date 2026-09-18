@@ -6489,9 +6489,17 @@ static bool poly_touches_geom(struct tg_poly *poly,
     return false;
 }
 
+static bool geometrycollection_touches_geom(const struct tg_geom *geom,
+    const struct tg_geom *other);
+
 static bool base_geom_touches_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
+    if (other && other->head.base == BASE_GEOM &&
+        other->head.type == TG_GEOMETRYCOLLECTION)
+    {
+        return geometrycollection_touches_geom(other, geom);
+    }
     if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
         switch (geom->head.type) {
         case TG_POINT: 
@@ -6502,8 +6510,7 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
             return poly_touches_geom(geom->poly, other);
         case TG_MULTIPOINT: 
         case TG_MULTILINESTRING: 
-        case TG_MULTIPOLYGON:
-        case TG_GEOMETRYCOLLECTION: {
+        case TG_MULTIPOLYGON: {
             bool touches = false;
             if (geom->multi) {
                 for (int i = 0; i < geom->multi->ngeoms; i++) {
@@ -6516,9 +6523,74 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
                 }
             }
             return touches;
-         }}
+        }
+        case TG_GEOMETRYCOLLECTION:
+            return geometrycollection_touches_geom(geom, other);
+        }
     }
     return false;
+}
+
+struct geometrycollection_touches_ctx {
+    const struct tg_geom *other;
+    int collection_dim;
+    int other_dim;
+    bool touches;
+    bool interior_intersects;
+};
+
+struct geometrycollection_touches_child_ctx {
+    struct geometrycollection_touches_ctx *ctx;
+    const struct tg_geom *child;
+};
+
+static bool geometrycollection_touches_other_iter(const struct tg_geom *geom,
+    void *udata)
+{
+    struct geometrycollection_touches_child_ctx *child_ctx = udata;
+    struct geometrycollection_touches_ctx *ctx = child_ctx->ctx;
+    if (tg_geom_is_empty(geom) ||
+        tg_geom_de9im_dims(geom) < ctx->other_dim)
+    {
+        return true;
+    }
+    if (tg_geom_touches(child_ctx->child, geom)) {
+        ctx->touches = true;
+    } else if (tg_geom_intersects(child_ctx->child, geom)) {
+        ctx->interior_intersects = true;
+        return false;
+    }
+    return true;
+}
+
+static bool geometrycollection_touches_iter(const struct tg_geom *geom,
+    void *udata)
+{
+    struct geometrycollection_touches_ctx *ctx = udata;
+    if (tg_geom_is_empty(geom) ||
+        tg_geom_de9im_dims(geom) < ctx->collection_dim)
+    {
+        return true;
+    }
+    struct geometrycollection_touches_child_ctx child_ctx = {
+        .ctx = ctx,
+        .child = geom,
+    };
+    tg_geom_foreach(ctx->other, geometrycollection_touches_other_iter,
+        &child_ctx);
+    return !ctx->interior_intersects;
+}
+
+static bool geometrycollection_touches_geom(const struct tg_geom *geom,
+    const struct tg_geom *other)
+{
+    struct geometrycollection_touches_ctx ctx = {
+        .other = other,
+        .collection_dim = tg_geom_de9im_dims(geom),
+        .other_dim = tg_geom_de9im_dims(other),
+    };
+    tg_geom_foreach(geom, geometrycollection_touches_iter, &ctx);
+    return ctx.touches && !ctx.interior_intersects;
 }
 
 /// Tests whether a geometry 'a' touches 'b'. 
@@ -6527,10 +6599,18 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
 /// @see GeometryPredicates
 bool tg_geom_touches(const struct tg_geom *geom, const struct tg_geom *other) {
     if (geom) {
+        bool other_is_geometrycollection = other &&
+            other->head.base == BASE_GEOM &&
+            other->head.type == TG_GEOMETRYCOLLECTION;
+        bool geom_is_geometrycollection = geom->head.base == BASE_GEOM &&
+            geom->head.type == TG_GEOMETRYCOLLECTION;
+        if (other_is_geometrycollection && !geom_is_geometrycollection) {
+            return tg_geom_touches(other, geom);
+        }
         switch (geom->head.base) {
         case BASE_GEOM:
             return base_geom_touches_geom(geom, other);
-        case BASE_POINT: 
+        case BASE_POINT:
             return point_touches_geom(((struct boxed_point*)geom)->point,
                 other);
         case BASE_LINE:
