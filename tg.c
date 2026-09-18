@@ -6199,6 +6199,7 @@ static bool point_contains_base_geom(struct tg_point point,
 
 struct geom_contains_iter_ctx {
     const struct tg_geom *geom;
+    int min_dim;
     bool result;
 };
 
@@ -6216,16 +6217,17 @@ static bool geom_contains_iter0(const struct tg_geom *geom, void *udata) {
 static bool geom_contains_iter(const struct tg_geom *geom, void *udata) {
     struct geom_contains_iter_ctx *ctx = udata;
     // skip empty geometries
-    if (!tg_geom_is_empty(geom)) {
+    if (!tg_geom_is_empty(geom) &&
+        tg_geom_de9im_dims(geom) >= ctx->min_dim)
+    {
         struct geom_contains_iter_ctx ctx0 = { .geom = geom };
         tg_geom_foreach(ctx->geom, geom_contains_iter0, &ctx0);
-        if (!ctx0.result) {
-            // unmark and quit the loop
-            ctx->result = false;
+        if (ctx0.result) {
+            // At least one highest-dimension child of 'other' intersects the
+            // interior of 'geom'. Coverage is checked before this iteration.
+            ctx->result = true;
             return false;
         }
-        // mark that at least one geom is contained
-        ctx->result = true;
     }
     return true;
 }
@@ -6245,8 +6247,15 @@ static bool base_geom_contains_geom(const struct tg_geom *geom,
         case TG_MULTILINESTRING:
         case TG_MULTIPOLYGON:
         case TG_GEOMETRYCOLLECTION: {
-            // all children of 'other' must be fully within 'geom'
-            struct geom_contains_iter_ctx ctx = { .geom = geom };
+            // All children of 'other' must be covered by 'geom', but only a
+            // highest-dimension child must intersect the interior of 'geom'.
+            if (!tg_geom_covers(geom, other)) {
+                return false;
+            }
+            struct geom_contains_iter_ctx ctx = {
+                .geom = geom,
+                .min_dim = tg_geom_de9im_dims(other),
+            };
             tg_geom_foreach(other, geom_contains_iter, &ctx);
             return ctx.result;
         }
