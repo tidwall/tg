@@ -810,4 +810,26 @@
       "touches":    ["T", "T"]
     }
   },
+  // Two distinct tangencies do not imply that the line crosses the polygon
+  // interior. Both contacts are isolated polygon vertices.
+  {
+    "geoms": [
+      "POLYGON ((0 0, 1 2, 2 0, 3 1, 4 2, 5 0, 5 -1, 0 -1, 0 0))",
+      "LINESTRING (-1 2, 6 2)"
+    ],
+    "dims": [ 2, 1 ],
+    "relate": [ "FF20F1102", "F01FF0212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
 ]
