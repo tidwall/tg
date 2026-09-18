@@ -3029,6 +3029,7 @@ bool tg_ring_contains_segment(const struct tg_ring *ring,
 }
 
 struct intersegiterctx {
+    const struct tg_ring *ring;
     struct tg_segment seg;
     int count;
     bool allow_on_edge;
@@ -3039,8 +3040,34 @@ struct intersegiterctx {
     // bool yes;
 };
 
+static bool ring_vertex_is_convex_tangent(const struct tg_ring *ring,
+    int index, struct tg_segment seg)
+{
+    // A line through a convex vertex is tangent when both incident ring
+    // edges stay on the same side of the line. A reflex vertex or incident
+    // edges on opposite sides expose polygon interior to the line.
+    int nsegs = ring->nsegs;
+    struct tg_point prev = ring->points[(index+nsegs-1)%nsegs];
+    struct tg_point vertex = ring->points[index];
+    struct tg_point next = ring->points[(index+1)%nsegs];
+    double in_x = vertex.x-prev.x;
+    double in_y = vertex.y-prev.y;
+    double out_x = next.x-vertex.x;
+    double out_y = next.y-vertex.y;
+    double turn = in_x*out_y-in_y*out_x;
+    bool convex = ring->clockwise ? turn < 0 : turn > 0;
+    if (!convex) {
+        return false;
+    }
+    double seg_x = seg.b.x-seg.a.x;
+    double seg_y = seg.b.y-seg.a.y;
+    double prev_side = seg_x*(prev.y-vertex.y)-seg_y*(prev.x-vertex.x);
+    double next_side = seg_x*(next.y-vertex.y)-seg_y*(next.x-vertex.x);
+    return (prev_side < 0 && next_side < 0) ||
+           (prev_side > 0 && next_side > 0);
+}
+
 static bool intersegiter(struct tg_segment seg, int index, void *udata) {
-    (void)index;
     struct intersegiterctx *ctx = udata;
 
     if (!tg_segment_intersects_segment(ctx->seg, seg)) {
@@ -3078,6 +3105,12 @@ static bool intersegiter(struct tg_segment seg, int index, void *udata) {
                 return true;
             }
         }
+        if (ccol || dcol) {
+            int vertex = ccol ? index : (index+1)%ctx->ring->nsegs;
+            if (ring_vertex_is_convex_tangent(ctx->ring, vertex, ctx->seg)) {
+                return true;
+            }
+        }
         double rx = b.x-a.x;
         double ry = b.y-a.y;
         double sx = d.x-c.x;
@@ -3110,6 +3143,7 @@ bool tg_ring_intersects_segment(const struct tg_ring *ring,
     // are on the outside and are passing over segments. If the segment passes
     // over at least two ring segments then it's intersecting.
     struct intersegiterctx ctx = { 
+        .ring = ring,
         .seg = seg,
         .allow_on_edge = allow_on_edge,
     };
