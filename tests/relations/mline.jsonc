@@ -427,4 +427,291 @@
       "touches":    ["T", "T"]
     }
   },
+  // A closed component has coincident start/end points and no boundary there.
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 1 0, 1 1, 0 0))",
+      "POINT (0 0)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "0F1FFFFF2", "0FFFFF1F2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 1 0, 1 1, 0 0))",
+      "LINESTRING (-1 1, 1 -1)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1FFF102", "0F1FF01F2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 1 0, 1 1, 0 0))",
+      "MULTILINESTRING ((-1 1, 1 -1))"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1FFF102", "0F1FF01F2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  // A zero-length segment at the start does not cancel the component endpoint.
+  // (Only endpoints are considered)
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 0, 1 0))",
+      "POINT (0 0)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "FF10F0FF2", "F0FFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 0, 1 0))",
+      "LINESTRING (0 -1, 0 1)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "FF10F0102", "F01FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 0 0, 1 0))",
+      "MULTILINESTRING ((0 -1, 0 1))"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "FF10F0102", "F01FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
+  // The end of one component and start of another cancel at the shared point.
+  {
+    "geoms": [
+      "MULTILINESTRING ((-1 0, 0 0), (0 0, 1 0))",
+      "POINT (0 0)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "0F1FF0FF2", "0FFFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((-1 0, 0 0), (0 0, 1 0))",
+      "LINESTRING (0 -1, 0 1)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1FF0102", "0F1FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((-1 0, 0 0), (0 0, 1 0))",
+      "MULTILINESTRING ((0 -1, 0 1))"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1FF0102", "0F1FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  // Two component endpoints cancel even when both are end points.
+  {
+    "geoms": [
+      "MULTILINESTRING ((-1 0, 0 0), (1 0, 0 0))",
+      "POINT (0 0)"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "0F1FF0FF2", "0FFFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((-1 0, 0 0), (1 0, 0 0))",
+      "LINESTRING (0 -1, 0 1)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1FF0102", "0F1FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((-1 0, 0 0), (1 0, 0 0))",
+      "MULTILINESTRING ((0 -1, 0 1))"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1FF0102", "0F1FF0102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  // Both segment endpoints coincide across operands: this is overlap,
+  // not touch.
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 1 0), (2 0, 3 0))",
+      "LINESTRING (1 0, 0 0)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "1F1F00FF2", "1FFF0F102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 1 0), (2 0, 3 0))",
+      "MULTILINESTRING ((1 0, 0 0))"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "1F1F00FF2", "1FFF0F102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
 ]
