@@ -832,4 +832,26 @@
       "touches":    ["T", "T"]
     }
   },
+  // The line overlaps the polygon boundary, but neither line endpoint lies
+  // on that boundary.
+  {
+    "geoms": [
+      "POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))",
+      "LINESTRING (-1 2, 3 2)"
+    ],
+    "dims": [ 2, 1 ],
+    "relate": [ "FF21F1102", "F11FF0212" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
+  },
 ]
