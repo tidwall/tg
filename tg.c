@@ -6199,16 +6199,30 @@ static bool point_contains_base_geom(struct tg_point point,
 
 struct geom_contains_iter_ctx {
     const struct tg_geom *geom;
+    int min_dim;
+    int max_cover_dim;
+    int max_contains_dim;
     bool result;
 };
 
 
 static bool geom_contains_iter0(const struct tg_geom *geom, void *udata) {
     struct geom_contains_iter_ctx *ctx = udata;
+    if (tg_geom_is_empty(geom)) {
+        return true;
+    }
+    int dim = tg_geom_de9im_dims(geom);
     if (tg_geom_contains(geom, ctx->geom)) {
-        // found a child object that contains geom, end inner loop
-        ctx->result = true;
-        return false;
+        if (dim > ctx->max_contains_dim) {
+            ctx->max_contains_dim = dim;
+        }
+        if (dim > ctx->max_cover_dim) {
+            ctx->max_cover_dim = dim;
+        }
+    } else if (tg_geom_covers(geom, ctx->geom) &&
+        dim > ctx->max_cover_dim)
+    {
+        ctx->max_cover_dim = dim;
     }
     return true;
 }
@@ -6216,16 +6230,23 @@ static bool geom_contains_iter0(const struct tg_geom *geom, void *udata) {
 static bool geom_contains_iter(const struct tg_geom *geom, void *udata) {
     struct geom_contains_iter_ctx *ctx = udata;
     // skip empty geometries
-    if (!tg_geom_is_empty(geom)) {
-        struct geom_contains_iter_ctx ctx0 = { .geom = geom };
+    if (!tg_geom_is_empty(geom) &&
+        tg_geom_de9im_dims(geom) >= ctx->min_dim)
+    {
+        struct geom_contains_iter_ctx ctx0 = {
+            .geom = geom,
+            .max_cover_dim = -1,
+            .max_contains_dim = -1,
+        };
         tg_geom_foreach(ctx->geom, geom_contains_iter0, &ctx0);
-        if (!ctx0.result) {
-            // unmark and quit the loop
-            ctx->result = false;
+        if (ctx0.max_contains_dim >= 0 &&
+            ctx0.max_contains_dim == ctx0.max_cover_dim)
+        {
+            // At least one highest-dimension child of 'other' intersects the
+            // interior of 'geom'. Coverage is checked before this iteration.
+            ctx->result = true;
             return false;
         }
-        // mark that at least one geom is contained
-        ctx->result = true;
     }
     return true;
 }
@@ -6245,8 +6266,15 @@ static bool base_geom_contains_geom(const struct tg_geom *geom,
         case TG_MULTILINESTRING:
         case TG_MULTIPOLYGON:
         case TG_GEOMETRYCOLLECTION: {
-            // all children of 'other' must be fully within 'geom'
-            struct geom_contains_iter_ctx ctx = { .geom = geom };
+            // All children of 'other' must be covered by 'geom', but only a
+            // highest-dimension child must intersect the interior of 'geom'.
+            if (!tg_geom_covers(geom, other)) {
+                return false;
+            }
+            struct geom_contains_iter_ctx ctx = {
+                .geom = geom,
+                .min_dim = tg_geom_de9im_dims(other),
+            };
             tg_geom_foreach(other, geom_contains_iter, &ctx);
             return ctx.result;
         }
@@ -6480,9 +6508,17 @@ static bool poly_touches_geom(struct tg_poly *poly,
     return false;
 }
 
+static bool geometrycollection_touches_geom(const struct tg_geom *geom,
+    const struct tg_geom *other);
+
 static bool base_geom_touches_geom(const struct tg_geom *geom, 
     const struct tg_geom *other)
 {
+    if (other && other->head.base == BASE_GEOM &&
+        other->head.type == TG_GEOMETRYCOLLECTION)
+    {
+        return geometrycollection_touches_geom(other, geom);
+    }
     if ((geom->head.flags&IS_EMPTY) != IS_EMPTY) {
         switch (geom->head.type) {
         case TG_POINT: 
@@ -6493,8 +6529,7 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
             return poly_touches_geom(geom->poly, other);
         case TG_MULTIPOINT: 
         case TG_MULTILINESTRING: 
-        case TG_MULTIPOLYGON:
-        case TG_GEOMETRYCOLLECTION: {
+        case TG_MULTIPOLYGON: {
             bool touches = false;
             if (geom->multi) {
                 for (int i = 0; i < geom->multi->ngeoms; i++) {
@@ -6507,9 +6542,74 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
                 }
             }
             return touches;
-         }}
+        }
+        case TG_GEOMETRYCOLLECTION:
+            return geometrycollection_touches_geom(geom, other);
+        }
     }
     return false;
+}
+
+struct geometrycollection_touches_ctx {
+    const struct tg_geom *other;
+    int collection_dim;
+    int other_dim;
+    bool touches;
+    bool interior_intersects;
+};
+
+struct geometrycollection_touches_child_ctx {
+    struct geometrycollection_touches_ctx *ctx;
+    const struct tg_geom *child;
+};
+
+static bool geometrycollection_touches_other_iter(const struct tg_geom *geom,
+    void *udata)
+{
+    struct geometrycollection_touches_child_ctx *child_ctx = udata;
+    struct geometrycollection_touches_ctx *ctx = child_ctx->ctx;
+    if (tg_geom_is_empty(geom) ||
+        tg_geom_de9im_dims(geom) < ctx->other_dim)
+    {
+        return true;
+    }
+    if (tg_geom_touches(child_ctx->child, geom)) {
+        ctx->touches = true;
+    } else if (tg_geom_intersects(child_ctx->child, geom)) {
+        ctx->interior_intersects = true;
+        return false;
+    }
+    return true;
+}
+
+static bool geometrycollection_touches_iter(const struct tg_geom *geom,
+    void *udata)
+{
+    struct geometrycollection_touches_ctx *ctx = udata;
+    if (tg_geom_is_empty(geom) ||
+        tg_geom_de9im_dims(geom) < ctx->collection_dim)
+    {
+        return true;
+    }
+    struct geometrycollection_touches_child_ctx child_ctx = {
+        .ctx = ctx,
+        .child = geom,
+    };
+    tg_geom_foreach(ctx->other, geometrycollection_touches_other_iter,
+        &child_ctx);
+    return !ctx->interior_intersects;
+}
+
+static bool geometrycollection_touches_geom(const struct tg_geom *geom,
+    const struct tg_geom *other)
+{
+    struct geometrycollection_touches_ctx ctx = {
+        .other = other,
+        .collection_dim = tg_geom_de9im_dims(geom),
+        .other_dim = tg_geom_de9im_dims(other),
+    };
+    tg_geom_foreach(geom, geometrycollection_touches_iter, &ctx);
+    return ctx.touches && !ctx.interior_intersects;
 }
 
 /// Tests whether a geometry 'a' touches 'b'. 
@@ -6518,10 +6618,18 @@ static bool base_geom_touches_geom(const struct tg_geom *geom,
 /// @see GeometryPredicates
 bool tg_geom_touches(const struct tg_geom *geom, const struct tg_geom *other) {
     if (geom) {
+        bool other_is_geometrycollection = other &&
+            other->head.base == BASE_GEOM &&
+            other->head.type == TG_GEOMETRYCOLLECTION;
+        bool geom_is_geometrycollection = geom->head.base == BASE_GEOM &&
+            geom->head.type == TG_GEOMETRYCOLLECTION;
+        if (other_is_geometrycollection && !geom_is_geometrycollection) {
+            return tg_geom_touches(other, geom);
+        }
         switch (geom->head.base) {
         case BASE_GEOM:
             return base_geom_touches_geom(geom, other);
-        case BASE_POINT: 
+        case BASE_POINT:
             return point_touches_geom(((struct boxed_point*)geom)->point,
                 other);
         case BASE_LINE:
