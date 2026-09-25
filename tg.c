@@ -15138,6 +15138,10 @@ bool tg_line_nearest_segment(const struct tg_line *line,
 /// Tests whether two geometries are topologically equal.
 /// @see GeometryPredicates
 bool tg_geom_equals(const struct tg_geom *a, const struct tg_geom *b) {
+    if (!a || !b) return false;
+    bool a_empty = tg_geom_is_empty(a);
+    bool b_empty = tg_geom_is_empty(b);
+    if (a_empty || b_empty) return a_empty && b_empty;
     return tg_geom_within(a, b) && tg_geom_contains(a, b);
 }
 
