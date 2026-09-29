@@ -6122,20 +6122,19 @@ static bool poly_contains_base_geom(struct tg_poly *poly,
         case TG_MULTILINESTRING: 
         case TG_MULTIPOLYGON:
         case TG_GEOMETRYCOLLECTION: {
-            bool covers = false;
-            int contains_count = 0;
+            bool contains = false;
             if (geom->multi && geom->multi->ngeoms > 0) {
-                covers = true;
+                contains = true;
                 for (int i = 0; i < geom->multi->ngeoms; i++) {
                     if (!poly_covers_geom(poly, geom->multi->geoms[i])) {
-                        covers = false;
+                        contains = false;
                         break;
                     }
 
-                    contains_count += poly_contains_geom(poly, geom->multi->geoms[i]);
+                    contains = contains || poly_contains_geom(poly, geom->multi->geoms[i]);
                 }
             }
-            return covers && contains_count > 0;
+            return contains;
         }}
     }
     return false;
