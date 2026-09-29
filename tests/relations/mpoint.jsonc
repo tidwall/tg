@@ -198,5 +198,47 @@
       "overlaps":   ["F", "F"],
       "touches":    ["F", "F"]
     }
+  },
+  // Within and contains with one interior point and one boundary point.
+  {
+    "geoms": [
+      "MULTIPOINT ((0 0), (1 1))",
+      "POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))"
+    ],
+    "dims": [ 0, 2 ],
+    "relate": [ "00FFFF212", "0F20F1FF2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "T"],
+      "within":     ["T", "F"],
+      "covers":     ["F", "T"],
+      "coveredby":  ["T", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  // All points lie on the polygon boundary, so coveredby is true but within is false.
+  {
+    "geoms": [
+      "MULTIPOINT ((0 0), (1 0))",
+      "POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))"
+    ],
+    "dims": [ 0, 2 ],
+    "relate": [ "F0FFFF212", "FF20F1FF2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "T"],
+      "coveredby":  ["T", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["T", "T"]
+    }
   }
 ]
