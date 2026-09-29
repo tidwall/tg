@@ -5939,12 +5939,18 @@ static bool poly_covers_base_geom(struct tg_poly *poly,
         case TG_MULTIPOLYGON:
         case TG_GEOMETRYCOLLECTION: 
             if (!geom->multi || geom->multi->ngeoms == 0) return false;
+            int empty_count = 0;
             for (int i = 0; i < geom->multi->ngeoms; i++) {
+                if ((geom->multi->geoms[i]->head.flags&IS_EMPTY) == IS_EMPTY) {
+                    ++empty_count;
+                    continue;
+                }
+                
                 if (!poly_covers_geom(poly, geom->multi->geoms[i])) {
                     return false;
                 }
             }
-            return true;
+            return empty_count != geom->multi->ngeoms;
         }
     }
     return false;
@@ -6124,13 +6130,17 @@ static bool poly_contains_base_geom(struct tg_poly *poly,
         case TG_GEOMETRYCOLLECTION: {
             bool contains = false;
             if (geom->multi && geom->multi->ngeoms > 0) {
-                contains = true;
                 for (int i = 0; i < geom->multi->ngeoms; i++) {
+                    if ((geom->multi->geoms[i]->head.flags&IS_EMPTY) == IS_EMPTY) {
+                        continue;
+                    }
+
                     if (!poly_covers_geom(poly, geom->multi->geoms[i])) {
                         contains = false;
                         break;
                     }
 
+                    // Require at least one interior intersection
                     contains = contains || poly_contains_geom(poly, geom->multi->geoms[i]);
                 }
             }
