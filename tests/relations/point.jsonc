@@ -67,7 +67,27 @@
     "dims": [ 0, 0 ],
     "relate": [ "FFFFFFFF2", "FFFFFFFF2" ],
     "predicates": {
-      "equals":     ["F", "F"],
+      "equals":     ["T", "T"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  {
+    "geoms": [
+      "POINT EMPTY",
+      "LINESTRING EMPTY"
+    ],
+    "dims": [ 0, 1 ],
+    "relate": [ "FFFFFFFF2", "FFFFFFFF2" ],
+    "predicates": {
+      "equals":     ["T", "T"],
       "intersects": ["F", "F"],
       "disjoint":   ["T", "T"],
       "contains":   ["F", "F"],
