@@ -714,4 +714,26 @@
       "touches":    ["F", "F"]
     }
   },
+  // A shared component endpoint is in the multiline interior under the Mod-2
+  // boundary rule, including when the point is wrapped in a multipoint.
+  {
+    "geoms": [
+      "MULTILINESTRING ((0 0, 1 0), (1 0, 2 0))",
+      "MULTIPOINT ((1 0))"
+    ],
+    "dims": [ 1, 0 ],
+    "relate": [ "0F1FF0FF2", "0FFFFF102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["T", "F"],
+      "within":     ["F", "T"],
+      "covers":     ["T", "F"],
+      "coveredby":  ["F", "T"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
 ]
