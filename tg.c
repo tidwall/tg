@@ -3063,8 +3063,8 @@ static bool ring_vertex_is_convex_tangent(const struct tg_ring *ring,
     double seg_y = seg.b.y-seg.a.y;
     double prev_side = seg_x*(prev.y-vertex.y)-seg_y*(prev.x-vertex.x);
     double next_side = seg_x*(next.y-vertex.y)-seg_y*(next.x-vertex.x);
-    return (prev_side < 0 && next_side < 0) ||
-           (prev_side > 0 && next_side > 0);
+    return (prev_side <= 0 && next_side <= 0) ||
+           (prev_side >= 0 && next_side >= 0);
 }
 
 static bool intersegiter(struct tg_segment seg, int index, void *udata) {
