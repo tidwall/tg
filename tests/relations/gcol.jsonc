@@ -243,4 +243,46 @@
       "touches":    ["F", "F"]
     }
   },
+  // An empty child does not prevent containment of the interior point.
+  {
+    "geoms": [
+      "GEOMETRYCOLLECTION (POINT EMPTY, POINT (1 1))",
+      "POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))"
+    ],
+    "dims": [ 0, 2 ],
+    "relate": [ "0FFFFF212", "0F2FF1FF2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "T"],
+      "within":     ["T", "F"],
+      "covers":     ["F", "T"],
+      "coveredby":  ["T", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
+  // A collection containing only empty points is not within or coveredby the polygon.
+  {
+    "geoms": [
+      "GEOMETRYCOLLECTION (POINT EMPTY, POINT EMPTY)",
+      "POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))"
+    ],
+    "dims": [ 0, 2 ],
+    "relate": [ "FFFFFF212", "FF2FF1FF2" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["F", "F"],
+      "disjoint":   ["T", "T"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["F", "F"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
 ]
