@@ -59,6 +59,28 @@
       "touches":    ["F", "F"]
     }
   },
+  // One child touches the line, but another crosses its interior.
+  // Touches must be false in both operand orders.
+  {
+    "geoms": [
+      "GEOMETRYCOLLECTION (LINESTRING (-1 0, 0 0), LINESTRING (1 -1, 1 1))",
+      "LINESTRING (0 0, 2 0)"
+    ],
+    "dims": [ 1, 1 ],
+    "relate": [ "0F1F00102", "0F1F00102" ],
+    "predicates": {
+      "equals":     ["F", "F"],
+      "intersects": ["T", "T"],
+      "disjoint":   ["F", "F"],
+      "contains":   ["F", "F"],
+      "within":     ["F", "F"],
+      "covers":     ["F", "F"],
+      "coveredby":  ["F", "F"],
+      "crosses":    ["T", "T"],
+      "overlaps":   ["F", "F"],
+      "touches":    ["F", "F"]
+    }
+  },
   // Highest dimension handling: only the highest dimension counts towards
   // the "interior" for the purposes of predicate evaluation
   {

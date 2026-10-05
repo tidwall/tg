@@ -2,7 +2,7 @@
 
 # ./geosbuild.sh [--rebuild]
 
-GEOS_VERS=3.12.0
+GEOS_VERS=3.15.0
 
 set -e
 cd $(dirname "${BASH_SOURCE[0]}")

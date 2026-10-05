@@ -766,7 +766,7 @@
   },
   // When a linestring geom2 is coincident with polygon hole, the
   // linestring is covered by the polygon but not contained by it
-  // // When geom2 is identical to a hole of geom1, the polygon covers
+  // When geom2 is identical to a hole of geom1, the polygon covers
   // the linestring but does not contain it.
   {
     "geoms": [
