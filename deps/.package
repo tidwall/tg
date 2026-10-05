@@ -1,7 +1,7 @@
-import github.com/tidwall/json.c v1.1.8
-import github.com/tidwall/fp v0.1.4
+import github.com/tidwall/json.c v1.2.0
+import github.com/tidwall/fp v0.1.5
 
-sum cba8cb6c700fc38902e8ddcaf0b056adad3227be  json.c
-sum 1a58747fed3daf14985bf9dea43aabea0de57c4d  json.h
-sum 13fa2874edafd4c71b944a8c0f1abe5877a890d7  fp.c
+sum cb01612a80b8b2e99941b3249b2a9198f55b9adf  json.c
+sum dc7b7fb5f778f69976838b0cfb401eaddf09a3f2  json.h
+sum 772c3e218b3cc4850e8994605493badfcee64c85  fp.c
 sum 3be96b07d324464ac76c9478e145291af1125492  fp.h

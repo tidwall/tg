@@ -565,12 +565,12 @@ static uint32_t decode_hex(const uint8_t *str) {
 }
 
 static bool is_surrogate(uint32_t cp) {
-    return cp > 55296 && cp < 57344;
+    return cp >= 55296 && cp < 57344;
 }
 
 static uint32_t decode_codepoint(uint32_t cp1, uint32_t cp2) {
-    return cp1 > 55296  && cp1 < 56320 && cp2 > 56320 && cp2 < 57344 ?
-        ((cp1 - 55296) << 10) | ((cp2 - 56320) + 65536) :
+    return cp1 >= 55296 && cp1 < 56320 && cp2 >= 56320 && cp2 < 57344 ?
+        ((cp1 - 55296) << 10) + (cp2 - 56320) + 65536 :
         65533;
 }
 
