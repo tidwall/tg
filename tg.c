@@ -122,6 +122,8 @@ TG_EXTERN int tg_geom_num_geometries(const struct tg_geom *geom);
 TG_EXTERN const struct tg_geom *tg_geom_geometry_at(const struct tg_geom *geom,
     int index);
 TG_EXTERN const char *tg_geom_extra_json(const struct tg_geom *geom);
+TG_EXTERN const char *tg_geom_extra_json2(const struct tg_geom *geom, 
+    size_t *jsonlen);
 TG_EXTERN bool tg_geom_is_empty(const struct tg_geom *geom);
 TG_EXTERN int tg_geom_dims(const struct tg_geom *geom);
 TG_EXTERN bool tg_geom_has_z(const struct tg_geom *geom);
@@ -179,6 +181,7 @@ TG_EXTERN struct tg_geom *tg_parse(const void *data, size_t len);
 TG_EXTERN struct tg_geom *tg_parse_ix(const void *data, size_t len,
     enum tg_index ix);
 TG_EXTERN const char *tg_geom_error(const struct tg_geom *geom);
+TG_EXTERN const char *tg_geom_json(const struct tg_geom *geom, size_t *jsonlen);
 TG_EXTERN int tg_geobin_fullrect(const uint8_t *geobin, size_t len,
     double min[4], double max[4]);
 TG_EXTERN struct tg_rect tg_geobin_rect(const uint8_t *geobin, size_t len);
@@ -753,6 +756,7 @@ struct tg_geom {
         char *xjson; // extra json fields, such as "id", "properties", etc.
         char *error; // an error message, when flag IS_ERROR
     };
+    size_t msglen; // length of xjson or error (excluding null-terminator)
 };
 
 struct boxed_point {
@@ -5354,7 +5358,7 @@ static size_t geom_memsize(const struct tg_geom *geom) {
     }
     if (geom->xjson) {
         // geom->error shares the same memory stored as a C string.
-        size += strlen(geom->xjson)+1;
+        size += geom->msglen+1;
     }
     return size;
 }
@@ -8519,7 +8523,10 @@ def_vec(struct gvec, struct tg_geom*, gvec_append, 1)
 done: \
     if (!geom) goto fail; \
     geom->head.flags |=  flags; \
-    if (extra) geom->xjson = extra; \
+    if (extra) { \
+        geom->xjson = extra; \
+        geom->msglen = strlen(extra); \
+    } \
     cleanup; \
     return geom; \
 fail: \
@@ -9026,7 +9033,7 @@ static struct tg_geom *parse_geojson_feature(struct json json, enum tg_index ix)
     if (geom->head.base == BASE_GEOM && geom->xjson) {
         // combine the two together as '[feature-extra,geometry-extra]'
         size_t xn0 = extra ? strlen(extra) : 0;
-        size_t xn1 = strlen(geom->xjson);
+        size_t xn1 = geom->msglen;
         if (!tg_buf_append_byte(&combined, '[') || 
             !tg_buf_append_bytes(&combined, 
                 (uint8_t*)(xn0 ? extra : "{}"), (xn0 ? xn0 : 2)) ||
@@ -12409,6 +12416,27 @@ const char *tg_geom_extra_json(const struct tg_geom *geom) {
           (geom->head.flags&IS_ERROR) != IS_ERROR ? geom->xjson : NULL;
 }
 
+/// Returns a string that represents any extra JSON from a parsed GeoJSON
+/// geometry. Such as the "id" or "properties" fields.
+/// @param geom Input geometry
+/// @param jsonlen Output json length, optional
+/// @return Returns a valid JSON object as a string, or NULL if the geometry
+/// did not come from GeoJSON or there is no extra JSON.
+/// @note The returned string does not need to be freed.
+/// @see tg_parse_geojson()
+const char *tg_geom_extra_json2(const struct tg_geom *geom, size_t *jsonlen) {
+    const char *xjson = 0;
+    size_t xjsonlen = 0;
+    if (geom && geom->head.base == BASE_GEOM &&
+        (geom->head.flags&IS_ERROR) != IS_ERROR)
+    {
+        xjson = geom->xjson;
+        xjsonlen = geom->msglen;
+    }
+    if (jsonlen) *jsonlen = xjsonlen;
+    return xjson;
+}
+
 //////////////////
 // wkt
 //////////////////
@@ -15786,12 +15814,13 @@ static struct tg_geom *geom_copy(const struct tg_geom *geom) {
     }
     if (geom->error) {
         // error and xjson share the same memory, so this copy covers both.
-        size_t esize = strlen(geom->error)+1;
+        size_t esize = geom->msglen+1;
         geom2->error = tg_malloc(esize);
         if (!geom2->error) {
             goto fail;
         }
         memcpy(geom2->error, geom->error, esize);
+        geom2->msglen = geom->msglen;
     }
     return geom2;
 fail:
@@ -16137,6 +16166,7 @@ static size_t parse_geobin(const uint8_t *geobin, size_t len, size_t i,
             return PARSE_FAIL;
         }
         memcpy(geom->xjson, xjson, xjsonlen+1);
+        geom->msglen = xjsonlen;
     }
     *g = geom;
     return i;

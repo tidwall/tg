@@ -110,6 +110,7 @@ const struct tg_poly *tg_geom_poly_at(const struct tg_geom *geom, int index);
 int tg_geom_num_geometries(const struct tg_geom *geom);
 const struct tg_geom *tg_geom_geometry_at(const struct tg_geom *geom, int index);
 const char *tg_geom_extra_json(const struct tg_geom *geom);
+const char *tg_geom_extra_json2(const struct tg_geom *geom, size_t *jsonlen);
 bool tg_geom_is_empty(const struct tg_geom *geom);
 int tg_geom_dims(const struct tg_geom *geom);
 bool tg_geom_has_z(const struct tg_geom *geom);

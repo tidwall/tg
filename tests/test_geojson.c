@@ -12,6 +12,20 @@ void __geom_geojson_match(int line, const struct tg_geom *geom, const char *jstr
         printf("line %d: expected '(null)', got '%s'\n", line, err);
         exit(1);
     }
+
+    if (geom) {
+        const char *j0 = tg_geom_extra_json(geom);
+        size_t jlen0 = 0;
+        size_t jlen1 = 0;
+        const char *j1 = tg_geom_extra_json2(geom, &jlen1);
+        assert(j0 == j1);
+        if (j0) {
+            jlen0 = strlen(j0);
+            assert(jlen0 == jlen1);
+        } else {
+            assert(jlen1 == 0);
+        }
+    }
     size_t len0 = strlen(jstr0);
     if (1) {
         size_t cap = 64;
